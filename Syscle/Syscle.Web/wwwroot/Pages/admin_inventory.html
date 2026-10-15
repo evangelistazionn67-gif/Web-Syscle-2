@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Syscle - Inventory</title><link rel="stylesheet" href="../Styles/global.css"><link rel="stylesheet" href="../Styles/admin_inventory.css"><link rel="stylesheet" href="../Styles/shop_additions.css">
+</head>
+<body>
+  <header class="top-nav">
+    <div class="logo-area"><h2>Web-Syscle</h2><p>Admin Panel</p></div>
+    <div class="search-container">
+      <input type="text" id="main-search-input" class="search-bar" placeholder="Search inventory...">
+      <img src="../Icons_and_Buttons/icon_clear.jpg" alt="Clear" id="clear-search" class="search-action-icon">
+      <img src="../Icons_and_Buttons/icon_search.jpg" alt="Search" id="execute-search" class="search-action-icon">
+    </div>
+    <div class="nav-actions"><a href="adminhomepage.html"><img src="../Icons_and_Buttons/icon_settings.jpg" alt="Dashboard" class="nav-icon settings-icon"></a><a href="account.html"><img src="../Icons_and_Buttons/Icon_Account.jpg" alt="Account" class="nav-icon profile-icon"></a></div>
+  </header>
+<main class="inventory-container sy-page">
+    <div class="sy-toolbar"><div><button class="back-btn" onclick="location.href='adminhomepage.html'">&larr; Dashboard</button><h1>Inventory Management</h1></div>
+    <div class="sy-pactions"><select id="cat-filter" class="sy-input" style="width:auto;margin:0" aria-label="Filter by category"></select><span id="inventory-count"></span><button class="sy-btn btn-add-item" id="btn-add-item" type="button">+ ADD ITEM</button></div></div>
+    <div class="sy-products" id="inventory-grid"></div>
+  </main>
+  <div class="sy-modal" id="item-modal"><div class="sy-modal-box"><h3 id="item-modal-title">Add item</h3>
+    <label>Category</label><select id="f-cat"></select><label>Item type</label><input id="f-type" placeholder="e.g. Fork" maxlength="60">
+    <label>Product name</label><input id="f-name" maxlength="100"><label>Price (PHP)</label><input id="f-price" type="number" min="0" step="0.01">
+    <label>Stock</label><input id="f-stock" type="number" min="0" step="1">
+    <label>Picture (optional, .jpg/.png/.webp under 3 MB)</label><input id="f-image" type="file" accept="image/*"><img id="f-preview" class="sy-preview" alt="" style="display:none">
+    <div class="sy-modal-actions"><button class="sy-btn ghost" id="f-cancel" type="button">Cancel</button><button class="sy-btn" id="f-save" type="button">Save</button></div></div></div>
+  <div class="support-btn"><img src="../Icons_and_Buttons/icon_support.jpg" alt="Support" class="support-icon"></div>
+  <script src="../JavaScripts/api.js"></script><script src="../JavaScripts/admin_inventory.js"></script>
+</body>
+</html>

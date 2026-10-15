@@ -1,0 +1,64 @@
+/* Universal Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body, html {
+    height: 100%;
+    background-color: #f5f5f5; /* Light gray background to make the white card pop */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Centered Error Card */
+.error-container {
+    background-color: #ffffff;
+    padding: 50px 40px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    width: 90%;
+    max-width: 450px;
+    border-top: 6px solid #000; /* Sharp black top border for visual anchor */
+}
+
+.error-icon {
+    font-size: 55px;
+    margin-bottom: 20px;
+}
+
+.error-container h1 {
+    font-size: 26px;
+    color: #000;
+    margin-bottom: 12px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
+
+.error-container p {
+    font-size: 15px;
+    color: #666;
+    margin-bottom: 35px;
+    line-height: 1.5;
+}
+
+/* Primary Action Button */
+.pill-btn {
+    background-color: #0073B2;
+    color: #ffffff;
+    border: none;
+    padding: 12px 30px;
+    font-size: 14px;
+    font-weight: bold;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.pill-btn:hover {
+    background-color: #005a8f;
+}

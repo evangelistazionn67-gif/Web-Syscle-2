@@ -1,0 +1,77 @@
+/* ========================================= */
+/* MAIN DASHBOARD LAYOUT                     */
+/* ========================================= */
+.customer-dashboard {
+    padding: 50px;
+    display: flex;
+    justify-content: center;
+}
+
+.category-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); 
+    gap: 30px;
+    width: 100%;
+    max-width: 900px;
+}
+
+/* ========================================= */
+/* IMAGE-BACKED CATEGORY CARDS               */
+/* ========================================= */
+.category-card.default-category {
+    position: relative;
+    border: 3px solid #000;
+    border-radius: 12px;
+    height: 120px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    overflow: hidden; 
+    background-color: #333; 
+    background-size: cover;
+    background-position: center;
+    transition: transform 0.1s, box-shadow 0.2s;
+}
+
+/* Dark overlay so the white text is readable over any image */
+.category-card.default-category::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.4); 
+    z-index: 1;
+}
+
+/* Hollow text styling (White fill, Black outline) */
+.category-card.default-category h3 {
+    position: relative;
+    z-index: 2; 
+    color: #ffffff;
+    font-size: 22px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    text-shadow: 
+        -1px -1px 0 #000,  
+         1px -1px 0 #000,
+        -1px  1px 0 #000,
+         1px  1px 0 #000,
+         2px  2px 5px rgba(0,0,0,0.8);
+}
+
+.category-card.default-category:hover {
+    box-shadow: 0 6px 12px rgba(0,0,0,0.25);
+    transform: translateY(-2px);
+}
+
+.category-card.default-category:active {
+    transform: scale(0.98);
+}
+
+/* Responsive collapse for small screens */
+@media screen and (max-width: 768px) {
+    .category-grid {
+        grid-template-columns: 1fr; 
+    }
+}

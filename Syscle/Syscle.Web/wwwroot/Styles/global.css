@@ -1,0 +1,153 @@
+/* ========================================= */
+/* GLOBAL RESET & BASE                       */
+/* ========================================= */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body, html {
+    height: 100%;
+    background-color: #ffffff;
+}
+
+/* ========================================= */
+/* GLOBAL TOP NAVIGATION                     */
+/* ========================================= */
+.top-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #000000;
+    color: #ffffff;
+    padding: 15px 40px;
+    height: 90px;
+}
+
+.logo-area {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.logo-area h2 {
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
+
+.logo-area p {
+    font-size: 10px;
+    font-weight: 600;
+    margin-top: -2px;
+}
+
+/* ========================================= */
+/* SEARCH BAR WITH ICONS                     */
+/* ========================================= */
+.search-container {
+    display: flex;
+    align-items: center;
+    background-color: #ffffff;
+    border-radius: 8px;
+    padding: 5px 15px;
+    width: 40%;
+    height: 45px;
+    gap: 10px;
+}
+
+.search-bar {
+    border: none;
+    outline: none;
+    flex-grow: 1;
+    font-size: 16px;
+    background: transparent;
+    color: #000;
+}
+
+.search-action-icon {
+    width: 20px !important;
+    height: 20px !important;
+    cursor: pointer;
+    object-fit: contain;
+    transition: transform 0.2s;
+}
+
+.search-action-icon:hover {
+    transform: scale(1.1);
+}
+
+/* ========================================= */
+/* BASE NAVIGATION ICONS CONTAINER           */
+/* ========================================= */
+.nav-actions {
+    display: flex;
+    gap: 25px;
+    align-items: center;
+}
+
+.nav-actions a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Universal sizing for ALL top-right icons */
+.nav-icon {
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    object-fit: contain;
+    width: 40px !important;
+    height: 40px !important;
+}
+
+.nav-icon:hover {
+    transform: scale(1.1);
+}
+
+.nav-icon.profile-icon {
+    border-radius: 50%;
+    border: 2px solid #fff;
+}
+
+.nav-icon.cart-icon {
+    border-radius: 50%;
+    border: 2px solid #fff;
+}
+
+.nav-icon.settings-icon {
+    border-radius: 50%;
+}
+
+/* ========================================= */
+/* GLOBAL SUPPORT BUTTON                     */
+/* ========================================= */
+.support-btn {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    cursor: pointer;
+    background-color: #fff;
+    border-radius: 50%;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    width: 60px;
+    height: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 2px solid #000;
+    z-index: 1000;
+}
+
+.support-icon {
+    width: 35px !important;
+    height: 35px !important;
+    object-fit: contain;
+}
+
+.support-btn:hover {
+    transform: scale(1.05);
+}

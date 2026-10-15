@@ -1,0 +1,178 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body, html {
+    height: 100%;
+    width: 100%;
+}
+
+.background-wrapper {
+    height: 100vh;
+    width: 100%;
+    background-image: url('loginpage_background.jpeg'); 
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.form-container {
+    background-color: rgba(238, 246, 255, 0.93); 
+    width: 650px;
+    padding: 45px 50px;
+    border-radius: 4px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+}
+
+.header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 35px;
+}
+
+.logo-area {
+    text-align: center;
+    color: #000;
+}
+
+.bike-icon {
+    font-size: 32px;
+}
+
+.logo-area h2 {
+    font-size: 22px;
+    font-weight: 800;
+    margin-top: -5px;
+    letter-spacing: -0.5px;
+}
+
+.logo-area p {
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.welcome-text h1 {
+    font-size: 26px;
+    color: #000;
+    font-weight: bold;
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+}
+
+.input-group {
+    margin-bottom: 22px;
+    display: flex;
+    flex-direction: column;
+}
+
+.input-group label {
+    font-weight: bold;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #000;
+}
+
+.input-group input {
+    padding: 12px 15px;
+    border: 2px solid #000; 
+    background-color: #fff;
+    font-size: 16px;
+    outline: none;
+}
+
+.form-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 35px;
+    font-size: 13px;
+}
+
+.remember-me {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #000;
+    font-weight: bold;
+}
+
+.link-text {
+    color: #005bb5;
+    text-decoration: underline;
+    font-weight: bold;
+}
+
+.link-text:hover {
+    color: #003d7a;
+}
+
+.pill-btn {
+    background-color: #0073B2; 
+    color: #ffffff;
+    border: none;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 30px; 
+    cursor: pointer;
+    width: 50%;
+    margin: 0 auto 20px auto; 
+    display: block;
+    transition: background-color 0.2s ease;
+}
+
+.pill-btn:hover {
+    background-color: #005a8f;
+}
+
+.switch-form-text {
+    text-align: center;
+    font-size: 13px;
+    color: #000;
+    font-weight: bold;
+}
+
+@media screen and (max-width: 768px) {
+    .form-container {
+        width: 90%; 
+        max-width: 500px;
+        padding: 30px 25px; 
+    }
+
+    .header-row {
+        flex-direction: column; 
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+
+    .welcome-text h1 {
+        font-size: 22px; 
+        text-align: center;
+    }
+
+    .pill-btn {
+        width: 80%; 
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .form-options {
+        flex-direction: column; 
+        gap: 15px;
+        align-items: flex-start;
+    }
+    
+    .pill-btn {
+        width: 100%; 
+    }
+}

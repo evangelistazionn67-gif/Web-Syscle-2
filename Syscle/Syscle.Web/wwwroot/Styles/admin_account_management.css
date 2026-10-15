@@ -1,0 +1,140 @@
+/* ========================================= */
+/* PAGE WRAPPER & HEADER                     */
+/* ========================================= */
+.account-page-wrapper {
+    padding: 40px 50px;
+    max-width: 1400px;
+    margin: 0 auto;
+    font-family: Arial, sans-serif;
+}
+
+.account-title {
+    font-size: 32px;
+    font-weight: bold;
+    color: #1a252f;
+    margin-bottom: 5px;
+}
+
+.account-subtitle {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 40px;
+}
+
+/* ========================================= */
+/* TWO-COLUMN GRID LAYOUT                    */
+/* ========================================= */
+.account-content-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 30px;
+    align-items: start;
+}
+
+/* ========================================= */
+/* LEFT COLUMN: ACCOUNT LIST CARD            */
+/* ========================================= */
+.account-list-card {
+    background-color: #fff;
+    border: 1px solid #f0f0f0; 
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+    min-height: 400px;
+}
+
+.account-list-card h3 {
+    font-size: 16px;
+    color: #333;
+    margin: 0 0 25px 0;
+}
+
+.table-responsive {
+    overflow-x: auto;
+}
+
+.account-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.account-table th {
+    color: #555;
+    padding: 10px 15px;
+    font-size: 12px;
+    font-weight: bold;
+    border-bottom: 1px solid #fff; 
+}
+
+.account-table td {
+    padding: 15px 15px;
+    font-size: 13px;
+    color: #333;
+    border-bottom: 1px solid #f4f6f8;
+    vertical-align: middle;
+}
+
+/* Checkbox Column Styling */
+.checkbox-col {
+    width: 30px;
+    text-align: center;
+    padding-left: 5px !important;
+}
+
+.account-cb {
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+    accent-color: #1a252f; /* Colors the checkbox dark navy when checked */
+}
+
+/* Status Text Colors */
+.status-online { color: #27ae60; font-weight: bold; }
+.status-offline { color: #888; font-weight: bold; }
+.status-suspended { color: #e74c3c; font-weight: bold; }
+
+/* FP Request Colors */
+.fp-yes { color: #27ae60; font-weight: bold; }
+.fp-no { color: #e74c3c; font-weight: bold; }
+
+/* ========================================= */
+/* RIGHT COLUMN: ACCOUNT ACTIONS CARD        */
+/* ========================================= */
+.account-actions-card {
+    background-color: #f4f6f8; 
+    border-radius: 20px;
+    padding: 30px;
+    min-height: 400px;
+}
+
+.account-actions-card h3 {
+    font-size: 16px;
+    color: #333;
+    margin: 0 0 25px 0;
+}
+
+.action-buttons-group {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.action-btn {
+    background-color: #fff;
+    color: #333;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 12px 20px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+
+.action-btn:hover {
+    background-color: #f9f9f9;
+    border-color: #ccc;
+}

@@ -1,0 +1,110 @@
+.inventory-container {
+    padding: 40px 50px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.inventory-header {
+    margin-bottom: 20px;
+}
+
+.back-btn {
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-bottom: 10px;
+}
+
+.back-btn:hover {
+    color: #000;
+    text-decoration: underline;
+}
+
+h1#dynamic-category-title {
+    font-size: 28px;
+    text-transform: uppercase;
+}
+
+/* ========================================= */
+/* INVENTORY TABLE STYLES                    */
+/* ========================================= */
+.inventory-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #fff;
+    border: 1px solid #000;
+}
+
+.inventory-table th, 
+.inventory-table td {
+    border: 1px solid #000;
+    padding: 12px 15px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.inventory-table th {
+    font-weight: bold;
+    text-transform: uppercase;
+    background-color: #f9f9f9;
+}
+
+.inventory-table td:nth-child(2) {
+    text-align: left; /* Keeps product names readable */
+}
+
+/* ========================================= */
+/* ACTION CELL & BUTTONS                     */
+/* ========================================= */
+.action-cell {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    border: none; /* Override to manage flexbox borders smoothly */
+}
+
+.qty-wrapper {
+    display: flex;
+    border: 1px solid #000;
+}
+
+.qty-btn {
+    background: #fff;
+    border: none;
+    padding: 5px 12px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.qty-btn:hover {
+    background: #eee;
+}
+
+.qty-input {
+    width: 30px;
+    text-align: center;
+    border: none;
+    border-left: 1px solid #000;
+    border-right: 1px solid #000;
+    font-size: 14px;
+    pointer-events: none;
+}
+
+.add-btn {
+    background-color: #fff;
+    border: 1px solid #000;
+    padding: 6px 15px;
+    font-weight: bold;
+    cursor: pointer;
+    text-transform: uppercase;
+}
+
+.add-btn:hover {
+    background-color: #000;
+    color: #fff;
+}

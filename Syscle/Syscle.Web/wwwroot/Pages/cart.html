@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Syscle - Shopping Cart</title><link rel="stylesheet" href="../Styles/global.css"><link rel="stylesheet" href="../Styles/cart_styles.css"><link rel="stylesheet" href="../Styles/shop_additions.css">
+</head>
+<body>
+  <header class="top-nav">
+    <div class="logo-area"><h2>Web-Syscle</h2><p>Shop &amp; Customize</p></div>
+    <div class="search-container">
+      <input type="text" id="main-search-input" class="search-bar" placeholder="Search products...">
+      <img src="../Icons_and_Buttons/icon_clear.jpg" alt="Clear" id="clear-search" class="search-action-icon">
+      <img src="../Icons_and_Buttons/icon_search.jpg" alt="Search" id="execute-search" class="search-action-icon">
+    </div>
+    <div class="nav-actions"><a href="cart.html"><img src="../Icons_and_Buttons/Icon_Cart.jpg" alt="Cart" class="nav-icon cart-icon"></a><a href="account.html"><img src="../Icons_and_Buttons/Icon_Account.jpg" alt="Account" class="nav-icon profile-icon"></a></div>
+  </header>
+<main class="cart-page-wrapper">
+    <div class="cart-header"><button onclick="window.location.href='homepage.html'" class="back-btn">&larr; Back to Storefront</button>
+    <h1 class="cart-page-title" id="cart-dynamic-title">(Username)&rsquo;s Cart</h1></div>
+    <div class="cart-main-panel">
+      <div class="cart-items-window" id="cart-items-container"></div>
+      <div class="cart-right-column">
+        <div class="order-summary-box">
+          <h2>ORDER SUMMARY</h2><hr class="summary-divider">
+          <div class="summary-meta-grid">
+            <span id="summary-dynamic-name">(Username)</span><span class="right-align" id="purchase-date">(Date of Purchase)</span>
+            <div class="promo-input-group"><label>Promo Code:</label><input type="text" class="promo-input" id="promo-code"><button class="sy-btn small" id="promo-apply" type="button">Apply</button></div>
+            <span class="right-align">Pick-up: <input type="date" class="promo-input" id="pickup-date"></span>
+          </div>
+          <div class="promo-input-group" style="margin:8px 0"><label>Payment:</label><select class="promo-input" id="payment-method"></select></div>
+          <p class="cost-breakdown-title">Cost Breakdown</p>
+          <div class="cost-breakdown-window" id="cost-breakdown-container"><div class="breakdown-headers"><span>--- Product Cost ---</span><span>--- Product Quantity ---</span></div></div>
+          <div class="total-cost-row"><strong id="total-cost">Total Cost: 0</strong></div>
+          <p class="order-number-text" id="order-number">ORDER NUMBER: (Generated after checkout)</p>
+        </div>
+        <button class="proceed-checkout-btn" id="btn-checkout" type="button"><img src="../Icons_and_Buttons/Icon_Cart.jpg" alt="Cart" class="btn-cart-icon"> Place Order <span class="btn-arrow">&#8680;</span></button>
+      </div>
+    </div>
+  </main>
+  <div class="support-btn"><img src="../Icons_and_Buttons/icon_support.jpg" alt="Support" class="support-icon"></div>
+  <script src="../JavaScripts/api.js"></script><script src="../JavaScripts/cart.js"></script>
+</body>
+</html>

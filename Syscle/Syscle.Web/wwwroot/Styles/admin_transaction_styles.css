@@ -1,0 +1,257 @@
+/* ========================================= */
+/* PAGE WRAPPER & TITLE                      */
+/* ========================================= */
+.transaction-page-wrapper {
+    padding: 30px 50px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.transaction-header {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 20px;
+}
+
+.back-btn {
+    align-self: flex-start;
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-bottom: 10px;
+}
+
+.back-btn:hover {
+    color: #000;
+    text-decoration: underline;
+}
+
+.transaction-page-title {
+    font-size: 32px;
+    font-weight: bold;
+}
+
+/* ========================================= */
+/* MAIN GREY PANEL LAYOUT                    */
+/* ========================================= */
+.transaction-main-panel {
+    display: flex;
+    background-color: #808080; /* Matches mockup grey background */
+    border: 4px solid #333;
+    padding: 20px;
+    gap: 20px;
+    height: 600px; /* Forces fixed height so scrolling activates */
+}
+
+/* ========================================= */
+/* LEFT: POS SEARCH & ITEMS WINDOW           */
+/* ========================================= */
+.transaction-left-column {
+    flex: 6;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    border-right: 2px solid #fff; /* White divider line */
+    padding-right: 15px;
+}
+
+/* Hovering POS Search Bar */
+.pos-search-wrapper {
+    position: relative; /* Essential for the dropdown list to float relative to this box */
+    width: 100%;
+}
+
+.pos-search-input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 3px solid #000;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+/* Dropdown list styling */
+.pos-dropdown-list {
+    display: none; /* Hidden by default. JS will toggle this */
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background-color: #fff;
+    border: 3px solid #000;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    z-index: 100; /* Forces it to hover OVER the cart items below */
+    max-height: 250px;
+    overflow-y: auto;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+}
+
+/* CSS trick to show the dropdown when hovering over the input wrapper for previewing purposes */
+.pos-search-wrapper:hover .pos-dropdown-list {
+    display: block; 
+}
+
+.pos-dropdown-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border-bottom: 1px solid #ccc;
+    background-color: #fff;
+}
+
+.pos-dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.pos-dropdown-item:hover {
+    background-color: #f1f1f1;
+}
+
+.item-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.item-details strong { font-size: 16px; color: #000; }
+.item-details span { font-size: 12px; color: #555; }
+
+.add-pos-btn {
+    background: #0073B2;
+    color: #fff;
+    border: 2px solid #000;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    transition: background-color 0.2s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.add-pos-btn:hover { background-color: #005a8f; }
+
+/* Scrollable Container for Added Items */
+.transaction-items-window {
+    background-color: transparent;
+    overflow-y: auto;
+    flex-grow: 1; /* Takes up remaining vertical space below search bar */
+}
+
+.transaction-items-window::-webkit-scrollbar { width: 8px; }
+.transaction-items-window::-webkit-scrollbar-track { background: #555; border-radius: 4px; }
+.transaction-items-window::-webkit-scrollbar-thumb { background: #fff; border-radius: 4px; border: 1px solid #000; }
+
+/* ========================================= */
+/* RIGHT: SUMMARY COLUMN                     */
+/* ========================================= */
+.transaction-right-column {
+    flex: 4;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.order-summary-box {
+    background-color: #fff;
+    border: 3px solid #000;
+    border-radius: 15px;
+    padding: 20px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.order-summary-box h2 {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.summary-divider {
+    border: none;
+    border-top: 2px solid #000;
+    margin: 10px 0 20px 0;
+}
+
+.summary-meta-grid {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+.walkin-name-input {
+    border: 1px solid #ccc;
+    padding: 5px;
+    font-size: 14px;
+    width: 50%;
+}
+
+.cost-breakdown-title {
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+.cost-breakdown-window {
+    background-color: #a6a6a6; /* Inner grey box */
+    border: 2px solid #000;
+    flex-grow: 1; 
+    max-height: 200px;
+    overflow-y: auto; 
+    padding: 10px;
+    margin-bottom: 15px;
+}
+
+.breakdown-headers {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    margin-bottom: 10px;
+}
+
+.total-cost-row {
+    border-top: 2px solid #000;
+    padding-top: 10px;
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+.order-number-text {
+    font-size: 12px;
+    text-align: center;
+}
+
+/* ========================================= */
+/* CHECKOUT BUTTON                           */
+/* ========================================= */
+.generate-transaction-btn {
+    background-color: #0073B2;
+    border: 3px solid #000;
+    color: #fff;
+    font-size: 20px;
+    font-weight: bold;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.generate-transaction-btn:hover {
+    background-color: #005a8f;
+}
+
+.btn-arrow {
+    font-size: 28px;
+    background-color: #fff;
+    color: #000;
+    padding: 0 15px;
+    border: 2px solid #000;
+}

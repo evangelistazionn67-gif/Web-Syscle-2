@@ -1,0 +1,81 @@
+/* ========================================= */
+/* ADMIN SPECIFIC HEADER RULES               */
+/* ========================================= */
+.nav-icon.settings-icon {
+    border-radius: 50%; /* Forces the settings icon to be a perfect circle */
+}
+
+/* ========================================= */
+/* ADMIN DASHBOARD GRID LAYOUT               */
+/* ========================================= */
+.admin-dashboard {
+    padding: 50px;
+    display: flex;
+    justify-content: center;
+}
+
+.admin-module-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); 
+    gap: 30px;
+    width: 100%;
+    max-width: 900px;
+}
+
+/* ========================================= */
+/* IMAGE-BACKED MODULE CARDS                 */
+/* ========================================= */
+.admin-module-card {
+    position: relative;
+    border: 3px solid #000; 
+    border-radius: 15px;
+    height: 120px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    overflow: hidden; 
+    background-color: #333; 
+    background-size: cover;
+    background-position: center;
+    transition: transform 0.1s, box-shadow 0.2s;
+}
+
+.admin-module-card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.4); 
+    z-index: 1;
+}
+
+.admin-module-card h3 {
+    position: relative;
+    z-index: 2; 
+    color: #ffffff;
+    font-size: 22px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    text-shadow: 
+        -1px -1px 0 #000,  
+         1px -1px 0 #000,
+        -1px  1px 0 #000,
+         1px  1px 0 #000,
+         2px  2px 5px rgba(0,0,0,0.8);
+}
+
+.admin-module-card:hover {
+    box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+    transform: translateY(-2px);
+}
+
+.admin-module-card:active {
+    transform: scale(0.98);
+}
+
+@media screen and (max-width: 768px) {
+    .admin-module-grid {
+        grid-template-columns: 1fr; 
+    }
+}

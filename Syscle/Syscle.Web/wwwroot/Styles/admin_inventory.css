@@ -1,0 +1,160 @@
+/* ========================================= */
+/* PAGE WRAPPER & HEADER                     */
+/* ========================================= */
+.inventory-page-wrapper {
+    padding: 40px 50px;
+    max-width: 1400px;
+    margin: 0 auto;
+    font-family: Arial, sans-serif;
+}
+
+.inventory-title {
+    font-size: 32px;
+    font-weight: bold;
+    color: #1a252f;
+    margin-bottom: 5px;
+}
+
+.inventory-subtitle {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 40px;
+}
+
+/* ========================================= */
+/* INVENTORY TOOLBAR                         */
+/* ========================================= */
+.inventory-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 20px;
+}
+
+.search-group {
+    display: flex;
+    flex-direction: column;
+    max-width: 400px;
+    flex-grow: 1;
+}
+
+.search-group label {
+    font-size: 12px;
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #333;
+}
+
+.search-group input {
+    padding: 10px 15px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    outline: none;
+    background-color: #fff;
+    max-width: 300px;
+}
+
+.btn-add-item {
+    background-color: #1a252f;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 12px 24px;
+    font-weight: bold;
+    font-size: 12px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: background-color 0.2s;
+}
+
+.btn-add-item:hover {
+    background-color: #0f161c;
+}
+
+/* ========================================= */
+/* INVENTORY TABLE                           */
+/* ========================================= */
+.table-container {
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden; 
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.inventory-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.inventory-table th {
+    background-color: #1a252f;
+    color: #fff;
+    padding: 15px 20px;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.inventory-table td {
+    padding: 15px 20px;
+    border-bottom: 1px solid #e0e0e0;
+    font-size: 14px;
+    color: #333;
+    vertical-align: middle;
+}
+
+.inventory-table tbody {
+    min-height: 200px; /* Provides visual space before DB injection */
+}
+
+/* ========================================= */
+/* PRE-BUILT CLASSES FOR JS/DB POPULATION    */
+/* ========================================= */
+
+/* Stock adjustment buttons (- 0 +) */
+.stock-adjust-group {
+    display: flex;
+    align-items: center;
+    gap: 15px; /* Controls the spacing between -, 0, and + */
+}
+
+.btn-minus, .btn-plus {
+    background: transparent;
+    border: none;
+    color: #333;
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0 5px;
+    transition: color 0.2s;
+}
+
+.btn-minus:hover, .btn-plus:hover {
+    color: #000;
+}
+
+.stock-qty {
+    font-size: 16px;
+    font-weight: bold;
+    color: #333;
+    min-width: 20px;
+    text-align: center;
+}
+
+/* Status Text Colors */
+.status-in-stock {
+    color: #27ae60; /* Green */
+    font-weight: bold;
+}
+
+.status-low-stock {
+    color: #f39c12; /* Yellow/Orange */
+    font-weight: bold;
+}
+
+.status-out-stock {
+    color: #e74c3c; /* Red */
+    font-weight: bold;
+}
