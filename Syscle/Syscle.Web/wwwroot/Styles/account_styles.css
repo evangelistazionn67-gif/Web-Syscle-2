@@ -1,6 +1,3 @@
-/* ========================================= */
-/* PAGE WRAPPER & TITLE                      */
-/* ========================================= */
 .account-page-wrapper {
     padding: 50px;
     max-width: 1200px;
@@ -14,9 +11,7 @@
     text-transform: uppercase;
 }
 
-/* ========================================= */
-/* TWO-COLUMN LAYOUT                         */
-/* ========================================= */
+
 .account-columns-container {
     display: flex;
     justify-content: space-between;
@@ -30,9 +25,7 @@
     flex-direction: column;
 }
 
-/* ========================================= */
-/* LEFT: INPUT FIELDS                        */
-/* ========================================= */
+
 .input-group {
     position: relative;
     margin-bottom: 15px;
@@ -41,7 +34,7 @@
 
 .info-input {
     width: 100%;
-    background-color: #e6e6e6; /* Grey background from mockup */
+    background-color: #e6e6e6;
     border: 2px solid #000;
     padding: 15px 40px 15px 15px;
     font-size: 16px;
@@ -65,7 +58,7 @@
     color: #000;
 }
 
-/* Red Log-out Button */
+
 .logout-btn {
     background-color: #ff0000;
     color: #000;
@@ -89,9 +82,7 @@
     transform: scale(0.98);
 }
 
-/* ========================================= */
-/* RIGHT: PROFILE PICTURE & SETTINGS         */
-/* ========================================= */
+
 .profile-pic-section {
     display: flex;
     align-items: center;
@@ -108,9 +99,9 @@
     background-color: #fff;
 }
 
-/* Blue Change Picture Button */
+
 .change-pic-btn {
-    background-color: #8faadc; /* Muted blue from mockup */
+    background-color: #8faadc;
     color: #000;
     border: 3px solid #000;
     border-radius: 30px;
@@ -125,7 +116,6 @@
     background-color: #7594c9;
 }
 
-/* Preferences Checkboxes */
 .preferences-section {
     display: flex;
     flex-direction: column;
@@ -143,7 +133,7 @@
     width: 24px;
     height: 24px;
     cursor: pointer;
-    accent-color: #000; /* Makes the checkmark bold/black when selected if supported */
+    accent-color: #000; 
 }
 
 .checkbox-group span {
