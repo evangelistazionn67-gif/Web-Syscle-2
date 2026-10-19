@@ -1,4 +1,3 @@
-// ACCOUNT PAGE (customers and admins): personal info, edit email/contact/password, order history with cancel (customers).
 (async function () {
   const $ = id => document.getElementById(id);
   let me;
