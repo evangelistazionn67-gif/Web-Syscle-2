@@ -42,7 +42,7 @@ app.Use(async (ctx, next) =>
         await ctx.Response.WriteAsJsonAsync(new { error = "Bad request." });
         return;
     }
-    // Page gate: admin pages/scripts are Admin only, shop pages are Customer only
+
     var need = Gate.Required(ctx.Request.Path.Value ?? "");
     if (need != null)
     {
@@ -60,7 +60,7 @@ IResult Conflict(string m) => Results.Conflict(new { error = m });
 int Uid(ClaimsPrincipal u) => int.Parse(u.FindFirstValue(ClaimTypes.NameIdentifier)!);
 string? Nz(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
 
-// ======================= AUTH (public) =======================
+
 var auth = app.MapGroup("/api/auth");
 var tries = new ConcurrentDictionary<string, List<DateTime>>();
 
@@ -73,7 +73,7 @@ auth.MapPost("/register", async (RegisterReq r, Db db) =>
     using var c = db.Open();
     var taken = await c.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM Users WHERE Username=@username OR Email=@email", new { username, email });
     if (taken > 0) return Conflict("That username or email is already registered.");
-    // Role is fixed here: public sign-up can only ever create a Customer.
+
     await c.ExecuteAsync("INSERT INTO Users(Username,Email,PasswordHash,Role) VALUES(@username,@email,@h,'Customer')", new { username, email, h = Pw.Hash(r.Password!) });
     return Results.Ok(new { ok = true });
 });
@@ -116,7 +116,7 @@ auth.MapGet("/me", async (ClaimsPrincipal u, Db db) =>
     return Results.Ok(await c.QueryFirstAsync("SELECT Username AS username, Email AS email, IFNULL(Phone,'') AS phone, Role AS role FROM Users WHERE UserId=@id", new { id = Uid(u) }));
 }).RequireAuthorization();
 
-// ======================= ANY LOGGED-IN USER =======================
+
 var me = app.MapGroup("/api/me").RequireAuthorization();
 me.MapPut("/profile", async (ProfileReq r, ClaimsPrincipal u, Db db) =>
 {
@@ -138,7 +138,7 @@ me.MapPost("/password", async (PasswordReq r, ClaimsPrincipal u, Db db) =>
     return Results.Ok(new { ok = true });
 });
 
-// ======================= PUBLIC CATALOG =======================
+
 app.MapGet("/api/categories", async (Db db) =>
 {
     using var c = db.Open();
@@ -152,7 +152,7 @@ app.MapGet("/api/products", async (string? category, Db db) =>
         WHERE (@category IS NULL OR c.Name = @category) ORDER BY p.Name", new { category = Nz(category) }));
 });
 
-// ======================= CUSTOMER ONLY =======================
+
 var shop = app.MapGroup("/api").RequireAuthorization("Customer");
 
 shop.MapGet("/cart", async (ClaimsPrincipal u, Db db) =>
@@ -198,7 +198,7 @@ shop.MapGet("/payment-methods", async (Db db) =>
 shop.MapPost("/checkout", async (CheckoutReq r, ClaimsPrincipal u, Db db) =>
 {
     using var c = db.Open();
-    using var tx = c.BeginTransaction();          // disposed without Commit() = rolled back
+    using var tx = c.BeginTransaction();         
     var uid = Uid(u);
     var lines = (await c.QueryAsync<Line>("SELECT p.ProductId, p.Name, p.Price, ci.Qty FROM CartItems ci JOIN Products p ON p.ProductId=ci.ProductId WHERE ci.UserId=@uid", new { uid }, tx)).ToList();
     if (lines.Count == 0) return Bad("Your list is empty.");
@@ -213,7 +213,7 @@ shop.MapPost("/checkout", async (CheckoutReq r, ClaimsPrincipal u, Db db) =>
         if (found is null) return Bad("That promo code is not valid.");
         pct = found.Value;
     }
-    var sub = lines.Sum(l => l.Price * l.Qty);                // prices always come from SQL, never from the browser
+    var sub = lines.Sum(l => l.Price * l.Qty);              
     var discount = Math.Round(sub * pct / 100m, 2);
     var total = sub - discount;
     var name = await c.ExecuteScalarAsync<string>("SELECT Username FROM Users WHERE UserId=@uid", new { uid }, tx);
@@ -249,10 +249,10 @@ shop.MapPost("/orders/{id:int}/cancel", async (int id, ClaimsPrincipal u, Db db)
     return Results.Ok(new { ok = true });
 });
 
-// ======================= ADMIN ONLY =======================
+
 var admin = app.MapGroup("/api/admin").RequireAuthorization("Admin");
 
-// ---- storefront categories ----
+
 admin.MapPost("/categories", async (HttpRequest req, Db db, IWebHostEnvironment env) =>
 {
     var form = await req.ReadFormAsync();
@@ -309,7 +309,7 @@ admin.MapGet("/stats", async (Db db) =>
     return Results.Ok(new { orders, prods, customers, low, recent });
 });
 
-// ---- inventory ----
+
 admin.MapGet("/products", async (Db db) =>
 {
     using var c = db.Open();
@@ -367,7 +367,7 @@ admin.MapPost("/products/{id:int}/image", async (int id, HttpRequest req, Db db,
     return Results.Ok(new { ok = true });
 });
 
-// ---- transactions ----
+
 admin.MapGet("/transactions", async (string? search, string? status, string? range, Db db) =>
 {
     DateTime? since = range switch { "today" => DateTime.Today, "7" => DateTime.Today.AddDays(-6), "30" => DateTime.Today.AddDays(-29), _ => null };
@@ -428,7 +428,7 @@ admin.MapPut("/transactions/{id:int}/status", async (int id, StatusReq r, Db db)
     return Results.Ok(new { ok = true });
 });
 
-// ---- payment setup ----
+
 admin.MapGet("/payment-methods", async (Db db) =>
 {
     using var c = db.Open();
@@ -443,7 +443,7 @@ admin.MapPut("/payment-methods", async (List<MethodReq> list, Db db) =>
     return Results.Ok(new { ok = true });
 });
 
-// ---- account management ----
+
 admin.MapGet("/accounts", async (Db db) =>
 {
     using var c = db.Open();
@@ -479,7 +479,7 @@ admin.MapPost("/accounts/{id:int}/password", async (int id, PasswordSetReq r, Cl
 {
     if ((r.Password ?? "").Length < 8) return Bad("Password must be at least 8 characters.");
     using var c = db.Open();
-    var bump = id == Uid(u) ? 0 : 1;   // changing someone else's password signs them out
+    var bump = id == Uid(u) ? 0 : 1;  
     await c.ExecuteAsync("UPDATE Users SET PasswordHash=@h, FpRequest=0, SessionVersion=SessionVersion+@bump WHERE UserId=@id", new { h = Pw.Hash(r.Password!), bump, id });
     return Results.Ok(new { ok = true });
 });
@@ -493,7 +493,7 @@ admin.MapDelete("/accounts/{id:int}", async (int id, ClaimsPrincipal u, Db db) =
 
 app.Run();
 
-// ======================= types =======================
+
 record RegisterReq(string? Username, string? Email, string? Password);
 record LoginReq(string? Login, string? Password);
 record ForgotReq(string? Email);
@@ -526,7 +526,7 @@ class Db
 
 static class Pics
 {
-    // Saves an uploaded picture under wwwroot/<folder>/ with a random name and returns its web path.
+  
     public static async Task<(string? path, string? error)> SaveAsync(HttpRequest req, string webRoot, string folder, string prefix, long maxBytes)
     {
         var form = await req.ReadFormAsync();
@@ -544,7 +544,7 @@ static class Pics
 
 static class Orders
 {
-    // Takes stock atomically (the WHERE Stock>=@q stops two buyers overselling) and records the order lines.
+ 
     public static async Task<string?> TakeStock(MySqlConnection c, MySqlTransaction tx, int orderId, List<Line> lines)
     {
         foreach (var l in lines)
@@ -560,7 +560,7 @@ static class Orders
 
 static class Gate
 {
-    // Default-deny for everything under /Pages and /JavaScripts. Only error.html and api.js are public.
+
     public static string? Required(string path)
     {
         var p = path.ToLowerInvariant();
@@ -603,7 +603,7 @@ static class Pw
 
 static class Auth
 {
-    // Runs on every request: the role/status/session version in SQL always win over what the cookie says.
+
     public static async Task Validate(CookieValidatePrincipalContext ctx)
     {
         var id = ctx.Principal?.FindFirstValue(ClaimTypes.NameIdentifier);
