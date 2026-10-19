@@ -1,4 +1,3 @@
-// CART: list, promo code, pick-up date, payment choice, checkout. The server recalculates every total.
 (async function () {
   const $ = id => document.getElementById(id);
   let cart = [], pct = 0, methods = [];
