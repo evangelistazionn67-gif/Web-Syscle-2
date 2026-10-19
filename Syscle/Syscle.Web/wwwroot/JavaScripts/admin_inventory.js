@@ -1,4 +1,3 @@
-// ADMIN: INVENTORY. Add / edit / delete parts with pictures. What you save here is exactly what customers see.
 (async function () {
   const $ = id => document.getElementById(id);
   let items = [], cats = [], editId = null, editImage = '', q = '', catFilter = '', firstLoad = true;
