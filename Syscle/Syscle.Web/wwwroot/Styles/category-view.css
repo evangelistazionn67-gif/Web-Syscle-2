@@ -28,9 +28,7 @@ h1#dynamic-category-title {
     text-transform: uppercase;
 }
 
-/* ========================================= */
-/* INVENTORY TABLE STYLES                    */
-/* ========================================= */
+
 .inventory-table {
     width: 100%;
     border-collapse: collapse;
@@ -53,18 +51,16 @@ h1#dynamic-category-title {
 }
 
 .inventory-table td:nth-child(2) {
-    text-align: left; /* Keeps product names readable */
+    text-align: left; 
 }
 
-/* ========================================= */
-/* ACTION CELL & BUTTONS                     */
-/* ========================================= */
+
 .action-cell {
     display: flex;
     justify-content: center;
     align-items: center;
     gap: 10px;
-    border: none; /* Override to manage flexbox borders smoothly */
+    border: none; 
 }
 
 .qty-wrapper {
