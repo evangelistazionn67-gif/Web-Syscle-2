@@ -1,4 +1,3 @@
-// ADMIN: TRANSACTIONS HISTORY. Filter, and mark orders Completed or Cancelled (cancelling returns the stock).
 (async function () {
   const $ = id => document.getElementById(id);
   const chip = s => `<span class="sy-chip ${s === 'Completed' ? 'ok' : s === 'Cancelled' ? 'bad' : 'warn'}">${esc(s)}</span>`;
