@@ -8,6 +8,7 @@
     "5080": { "label": "Web-Syscle", "onAutoForward": "openBrowser" }
   },
   "postCreateCommand": "bash .devcontainer/setup.sh",
+  "postStartCommand": "nohup dotnet run --project Syscle/Syscle.Web/Syscle.Web.csproj > /tmp/dotnet.log 2>&1 &",
   "customizations": {
     "vscode": { "extensions": ["ms-dotnettools.csharp"] }
   }
