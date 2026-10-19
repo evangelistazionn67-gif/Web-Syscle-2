@@ -1,4 +1,3 @@
-// CUSTOMER HOME: bike-type tiles, then a shelf of every part with filter buttons, sorting and an in-stock switch.
 (async function () {
   const grid = document.querySelector('.category-grid'), shelf = document.getElementById('shelf-products'), chips = document.getElementById('shelf-chips'), count = document.getElementById('shelf-count');
   const sortEl = document.getElementById('shelf-sort'), stockEl = document.getElementById('shelf-instock'), input = document.getElementById('main-search-input');
