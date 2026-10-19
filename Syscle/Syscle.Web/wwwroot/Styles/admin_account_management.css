@@ -1,6 +1,3 @@
-/* ========================================= */
-/* PAGE WRAPPER & HEADER                     */
-/* ========================================= */
 .account-page-wrapper {
     padding: 40px 50px;
     max-width: 1400px;
@@ -21,9 +18,7 @@
     margin-bottom: 40px;
 }
 
-/* ========================================= */
-/* TWO-COLUMN GRID LAYOUT                    */
-/* ========================================= */
+
 .account-content-grid {
     display: grid;
     grid-template-columns: 2fr 1fr;
@@ -31,9 +26,7 @@
     align-items: start;
 }
 
-/* ========================================= */
-/* LEFT COLUMN: ACCOUNT LIST CARD            */
-/* ========================================= */
+
 .account-list-card {
     background-color: #fff;
     border: 1px solid #f0f0f0; 
@@ -75,7 +68,7 @@
     vertical-align: middle;
 }
 
-/* Checkbox Column Styling */
+
 .checkbox-col {
     width: 30px;
     text-align: center;
@@ -86,21 +79,19 @@
     cursor: pointer;
     width: 16px;
     height: 16px;
-    accent-color: #1a252f; /* Colors the checkbox dark navy when checked */
+    accent-color: #1a252f; 
 }
 
-/* Status Text Colors */
+
 .status-online { color: #27ae60; font-weight: bold; }
 .status-offline { color: #888; font-weight: bold; }
 .status-suspended { color: #e74c3c; font-weight: bold; }
 
-/* FP Request Colors */
+
 .fp-yes { color: #27ae60; font-weight: bold; }
 .fp-no { color: #e74c3c; font-weight: bold; }
 
-/* ========================================= */
-/* RIGHT COLUMN: ACCOUNT ACTIONS CARD        */
-/* ========================================= */
+
 .account-actions-card {
     background-color: #f4f6f8; 
     border-radius: 20px;
