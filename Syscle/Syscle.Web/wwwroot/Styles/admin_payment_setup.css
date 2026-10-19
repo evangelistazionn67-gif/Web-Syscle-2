@@ -1,6 +1,3 @@
-/* ========================================= */
-/* PAGE WRAPPER & HEADER                     */
-/* ========================================= */
 .payment-page-wrapper {
     padding: 40px 50px;
     max-width: 1400px;
@@ -21,9 +18,6 @@
     margin-bottom: 40px;
 }
 
-/* ========================================= */
-/* TWO-COLUMN GRID LAYOUT                    */
-/* ========================================= */
 .payment-content-grid {
     display: grid;
     grid-template-columns: 2fr 1fr;
@@ -37,9 +31,7 @@
     gap: 20px;
 }
 
-/* ========================================= */
-/* LEFT COLUMN: PAYMENT CARDS                */
-/* ========================================= */
+
 .payment-card {
     display: flex;
     justify-content: space-between;
@@ -95,7 +87,7 @@
     margin: 0 0 20px 0;
 }
 
-/* Updated for text boxes */
+
 .details-row {
     display: flex;
     gap: 30px;
@@ -104,7 +96,7 @@
 .input-group {
     display: flex;
     flex-direction: column;
-    flex: 1; /* Allows boxes to stretch evenly */
+    flex: 1;
     gap: 8px;
 }
 
@@ -129,9 +121,7 @@
     border-color: #1a252f;
 }
 
-/* ========================================= */
-/* RIGHT COLUMN: NOTES SIDEBAR & BUTTON      */
-/* ========================================= */
+
 .payment-notes-col {
     display: flex;
     flex-direction: column;
