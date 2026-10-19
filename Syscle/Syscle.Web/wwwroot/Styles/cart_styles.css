@@ -1,6 +1,3 @@
-/* ========================================= */
-/* PAGE WRAPPER, HEADER & TITLE              */
-/* ========================================= */
 .cart-page-wrapper {
     padding: 30px 50px;
     max-width: 1200px;
@@ -34,9 +31,7 @@
     font-weight: bold;
 }
 
-/* ========================================= */
-/* MAIN GREY PANEL LAYOUT                    */
-/* ========================================= */
+
 .cart-main-panel {
     display: flex;
     background-color: #808080; 
@@ -46,9 +41,7 @@
     height: 600px; 
 }
 
-/* ========================================= */
-/* LEFT: SCROLLABLE ITEMS WINDOW             */
-/* ========================================= */
+
 .cart-items-window {
     flex: 6;
     background-color: transparent;
@@ -80,9 +73,7 @@
     position: relative;
 }
 
-/* ========================================= */
-/* RIGHT: SUMMARY COLUMN                     */
-/* ========================================= */
+
 .cart-right-column {
     flex: 4;
     display: flex;
@@ -135,9 +126,7 @@
     padding: 4px;
 }
 
-/* ========================================= */
-/* RIGHT: SCROLLABLE COST BREAKDOWN WINDOW   */
-/* ========================================= */
+
 .cost-breakdown-title {
     font-size: 14px;
     margin-bottom: 5px;
@@ -172,9 +161,7 @@
     text-align: center;
 }
 
-/* ========================================= */
-/* CHECKOUT BUTTON                           */
-/* ========================================= */
+
 .proceed-checkout-btn {
     background-color: #0073B2;
     border: 3px solid #000;
