@@ -1,4 +1,4 @@
-// ADMIN: ACCOUNT MANAGEMENT. Tick one or more accounts, then use the action buttons.
+
 (async function () {
   const $ = id => document.getElementById(id);
   let rows = [], q = '';
