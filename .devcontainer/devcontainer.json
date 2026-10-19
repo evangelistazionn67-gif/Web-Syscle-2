@@ -1,0 +1,14 @@
+{
+  "name": "Web-Syscle (ASP.NET 8 + MySQL)",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "forwardPorts": [5080],
+  "portsAttributes": {
+    "5080": { "label": "Web-Syscle", "onAutoForward": "openBrowser" }
+  },
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "customizations": {
+    "vscode": { "extensions": ["ms-dotnettools.csharp"] }
+  }
+}
