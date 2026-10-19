@@ -1,4 +1,3 @@
-// Shared helpers for every page. Public file with no secrets: the server checks every request itself.
 async function api(url, method = 'GET', body) {
   const opt = { method, headers: { 'X-Requested-With': 'syscle' } };
   if (body instanceof FormData) opt.body = body;
@@ -26,7 +25,7 @@ async function logoutUser() {
   try { await api('/api/auth/logout', 'POST'); } catch (e) { /* already logged out */ }
   location.href = '/index.html';
 }
-// ---- pop-up layer (product details, order confirmation) ----
+
 function showModal(html) {
   const ov = document.createElement('div');
   ov.className = 'sy-ov';
@@ -38,7 +37,7 @@ function showModal(html) {
   document.body.appendChild(ov);
   return { el: ov, close };
 }
-// ---- cart counter on the header cart icon, and the footer (customer pages only) ----
+
 async function refreshCartBadge() {
   const icon = document.querySelector('.cart-icon'); if (!icon) return;
   const link = icon.closest('a'); if (!link || link.style.display === 'none') return;
@@ -58,7 +57,7 @@ function addFooter() {
     '<div class="sy-fcopy">&copy; ' + new Date().getFullYear() + ' Web-Syscle. All rights reserved.</div>';
   document.body.appendChild(f);
 }
-// Header search: onSearch(text) filters the current page; with no handler, a customer search jumps to the home page results.
+
 function initHeader(onSearch) {
   const isShop = !!document.querySelector('.cart-icon');
   if (isShop) { refreshCartBadge(); addFooter(); }
@@ -72,7 +71,7 @@ function initHeader(onSearch) {
   if (go) go.addEventListener('click', submit);
   if (clr) clr.addEventListener('click', () => { input.value = ''; input.focus(); run(); });
 }
-// ---- Shared product card (Decathlon style). Clicking Buy / the picture / the name opens the product layer. ----
+
 const BASKET_SVG = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.7 12.4a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20.5 8H6"/></svg>';
 const stockTag = s => s === 0 ? 'Sold out' : s <= 5 ? 'Only ' + s + ' left' : '';
 function productCard(p) {
