@@ -1,4 +1,3 @@
-// CATEGORY VIEW: product cards for one bike type, with sorting. Buy opens the product layer.
 (async function () {
   const cat = new URLSearchParams(location.search).get('cat');
   if (!cat) { location.href = 'error.html'; return; }
