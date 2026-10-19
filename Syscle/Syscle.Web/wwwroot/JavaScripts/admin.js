@@ -1,4 +1,4 @@
-// ADMIN: STORE-FRONT CONFIG. Bike-type tiles: add / delete, change the picture, see how many items each has, and jump to Inventory to add items to it.
+
 (async function () {
   const grid = document.querySelector('.category-grid'), modal = document.getElementById('add-category-modal');
   grid.classList.add('sy-admingrid');
