@@ -1,7 +1,7 @@
 // ADMIN: INVENTORY. Add / edit / delete parts with pictures. What you save here is exactly what customers see.
 (async function () {
   const $ = id => document.getElementById(id);
-  let items = [], cats = [], editId = null, editImage = '', q = '', catFilter = '';
+  let items = [], cats = [], editId = null, editImage = '', q = '', catFilter = '', firstLoad = true;
   const tag = s => s === 0 ? 'Out of stock' : s <= 5 ? 'Only ' + s + ' left' : '';
   function render() {
     const rows = items.filter(p => (!catFilter || String(p.categoryId) === catFilter) && (p.name + ' ' + p.category + ' ' + p.itemType).toLowerCase().includes(q));
@@ -19,6 +19,12 @@
       [items, cats] = await Promise.all([api('/api/admin/products'), api('/api/categories')]);
       $('cat-filter').innerHTML = '<option value="">All categories</option>' + cats.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
       $('cat-filter').value = catFilter; render();
+      if (firstLoad) {
+        firstLoad = false;
+        const sp = new URLSearchParams(location.search);
+        if (sp.get('cat')) { catFilter = sp.get('cat'); $('cat-filter').value = catFilter; render(); }
+        if (sp.get('add')) openModal(null);
+      }
     } catch (e) { toast(e.message, true); }
   }
   function showPreview(src) { const i = $('f-preview'); i.src = src || ''; i.style.display = src ? 'block' : 'none'; }
@@ -27,7 +33,7 @@
     editId = p ? p.id : null; editImage = p && p.image ? p.image : '';
     $('item-modal-title').textContent = p ? 'Edit item' : 'Add item';
     $('f-cat').innerHTML = cats.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
-    $('f-cat').value = p ? p.categoryId : cats[0].id;
+    $('f-cat').value = p ? p.categoryId : (catFilter || cats[0].id);
     $('f-type').value = p ? p.itemType : ''; $('f-name').value = p ? p.name : '';
     $('f-price').value = p ? p.price : ''; $('f-stock').value = p ? p.stock : '';
     $('f-image').value = ''; showPreview(editImage);

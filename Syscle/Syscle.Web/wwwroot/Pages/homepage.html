@@ -14,8 +14,18 @@
     </div>
     <div class="nav-actions"><a href="cart.html"><img src="../Icons_and_Buttons/Icon_Cart.jpg" alt="Cart" class="nav-icon cart-icon"></a><a href="account.html"><img src="../Icons_and_Buttons/Icon_Account.jpg" alt="Account" class="nav-icon profile-icon"></a></div>
   </header>
-<main class="customer-dashboard"><div class="category-grid"><!-- categories load from SQL Server --></div></main>
-  <section class="sy-shelf"><h2>All parts <span id="shelf-count"></span></h2><div class="sy-fbar" id="shelf-chips"></div><div class="sy-products" id="shelf-products"></div></section>
+<section class="sy-hero"><div class="sy-hero-in"><p class="sy-kicker">Web-Syscle &middot; Shop &amp; Customize</p>
+    <h1>Upgrade your ride with parts you can trust</h1>
+    <p>Rims, tires, derailleurs, cockpit parts and more. Pick up in store and pay in Cash or GCash.</p>
+    <a class="sy-btn accent" href="#shelf">Shop all parts</a></div></section>
+  <div class="sy-trust"><div>Genuine parts</div><div>Store pick-up</div><div>Cash or GCash</div><div>Promo codes</div></div>
+  <h2 class="sy-sectionhead">Shop by bike type</h2>
+  <main class="customer-dashboard"><div class="category-grid"><!-- categories load from SQL Server --></div></main>
+  <section class="sy-shelf" id="shelf"><h2>All parts <span id="shelf-count"></span></h2>
+    <div class="sy-shelfbar"><div class="sy-fbar" id="shelf-chips"></div>
+      <div class="sy-shelfctl"><label><input type="checkbox" id="shelf-instock"> In stock only</label>
+        <select id="shelf-sort" aria-label="Sort"><option value="">Featured</option><option value="low">Price: low to high</option><option value="high">Price: high to low</option><option value="name">Name: A to Z</option></select></div></div>
+    <div class="sy-products" id="shelf-products"></div></section>
   <div class="support-btn"><img src="../Icons_and_Buttons/icon_support.jpg" alt="Support" class="support-icon"></div>
   <script src="../JavaScripts/api.js"></script><script src="../JavaScripts/customer.js"></script>
 </body>

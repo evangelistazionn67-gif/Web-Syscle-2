@@ -11,7 +11,7 @@
   pick.min = localISO(today); pick.value = localISO(today); pick.max = localISO(new Date(today.getTime() + 30 * 864e5));
   function render() {
     const box = $('cart-items-container'), bd = $('cost-breakdown-container');
-    box.innerHTML = cart.length ? '' : '<div class="sy-empty" style="color:#fff">Your list is empty. Go back to the storefront to add parts.</div>';
+    box.innerHTML = cart.length ? '' : '<div class="sy-empty" style="color:#fff">Your cart is empty. <a href="homepage.html" style="color:#ffd23f">Browse parts</a></div>';
     bd.querySelectorAll('.sy-row').forEach(n => n.remove());
     let sub = 0;
     cart.forEach(l => {
@@ -24,7 +24,7 @@
     });
     $('total-cost').textContent = 'Total Cost: ' + peso(sub - Math.round(sub * pct) / 100) + (pct ? ` (${pct}% off)` : '');
   }
-  async function load() { cart = await api('/api/cart'); render(); }
+  async function load() { cart = await api('/api/cart'); render(); refreshCartBadge(); }
   async function setQty(id, q) { try { await api('/api/cart/' + id, 'PUT', { qty: q }); await load(); } catch (e) { toast(e.message, true); } }
   $('cart-items-container').addEventListener('click', e => {
     const card = e.target.closest('[data-id]'); if (!card) return;
@@ -40,13 +40,17 @@
     render();
   });
   $('btn-checkout').addEventListener('click', async () => {
-    if (!cart.length) return toast('Your list is empty.', true);
+    if (!cart.length) return toast('Your cart is empty.', true);
+    const pickText = new Date(pick.value + 'T00:00:00').toLocaleDateString();
     try {
       const res = await api('/api/checkout', 'POST', { pickupDate: pick.value, promoCode: $('promo-code').value.trim() || null, paymentMethod: $('payment-method').value });
       $('order-number').textContent = 'ORDER NUMBER: ' + res.orderCode;
       const m = methods.find(x => x.code === $('payment-method').value);
-      cart = []; pct = 0; render();
-      toast(`Order ${res.orderCode} placed! Total ${peso(res.total)}. Pay at pick-up` + (m && m.accountNumber ? ` or via ${m.label}: ${m.accountNumber}` : '') + '.');
+      cart = []; pct = 0; render(); refreshCartBadge();
+      const pay = m && m.accountNumber ? `<p>Pay with <b>${esc(m.label)}</b>: <b>${esc(m.accountNumber)}</b>${m.accountName ? ' (' + esc(m.accountName) + ')' : ''}, or pay at the store.</p>` : '<p>Pay at the store when you pick up.</p>';
+      showModal(`<div class="sy-done"><div class="sy-check">&#10003;</div><h2>Order placed!</h2><p>Your order number</p><div class="sy-code">${esc(res.orderCode)}</div>
+        <p>Total: <b>${peso(res.total)}</b></p><p>Pick-up date: <b>${pickText}</b></p>${pay}
+        <div class="sy-pm-actions"><a class="sy-btn ghost" href="account.html">View my orders</a><a class="sy-btn accent" href="homepage.html">Continue shopping</a></div></div>`);
     } catch (e) { toast(e.message, true); await load(); }
   });
   try {
@@ -54,4 +58,5 @@
     $('payment-method').innerHTML = methods.map(m => `<option value="${esc(m.code)}">${esc(m.label)}</option>`).join('') || '<option value="">No payment method available</option>';
     await load();
   } catch (e) { location.href = 'error.html'; }
+  initHeader(null);
 })();

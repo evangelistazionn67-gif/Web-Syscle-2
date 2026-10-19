@@ -231,9 +231,22 @@ shop.MapPost("/checkout", async (CheckoutReq r, ClaimsPrincipal u, Db db) =>
 shop.MapGet("/orders", async (ClaimsPrincipal u, Db db) =>
 {
     using var c = db.Open();
-    return Results.Ok(await c.QueryAsync(@"SELECT CONCAT(IF(o.Channel='Walk-in','WLK-','ORD-'), LPAD(o.OrderId,6,'0')) AS code, o.CreatedAt AS date, o.PickupDate AS pickup, o.PaymentMethod AS payment, o.Total AS total, o.Status AS status,
+    return Results.Ok(await c.QueryAsync(@"SELECT o.OrderId AS id, CONCAT(IF(o.Channel='Walk-in','WLK-','ORD-'), LPAD(o.OrderId,6,'0')) AS code, o.CreatedAt AS date, o.PickupDate AS pickup, o.PaymentMethod AS payment, o.Total AS total, o.Status AS status,
         (SELECT GROUP_CONCAT(CONCAT(oi.ProductName, ' x', oi.Qty) SEPARATOR ', ') FROM OrderItems oi WHERE oi.OrderId = o.OrderId) AS items
         FROM Orders o WHERE o.UserId=@uid ORDER BY o.OrderId DESC", new { uid = Uid(u) }));
+});
+
+shop.MapPost("/orders/{id:int}/cancel", async (int id, ClaimsPrincipal u, Db db) =>
+{
+    using var c = db.Open();
+    using var tx = c.BeginTransaction();
+    var st = await c.QueryFirstOrDefaultAsync<string>("SELECT Status FROM Orders WHERE OrderId=@id AND UserId=@uid FOR UPDATE", new { id, uid = Uid(u) }, tx);
+    if (st is null) return Results.NotFound(new { error = "Order not found." });
+    if (st != "Pending") return Conflict("Only pending orders can be cancelled. Please contact the store.");
+    await c.ExecuteAsync("UPDATE Products p JOIN OrderItems oi ON oi.ProductId = p.ProductId SET p.Stock = p.Stock + oi.Qty WHERE oi.OrderId=@id", new { id }, tx);
+    await c.ExecuteAsync("UPDATE Orders SET Status='Cancelled' WHERE OrderId=@id", new { id }, tx);
+    tx.Commit();
+    return Results.Ok(new { ok = true });
 });
 
 // ======================= ADMIN ONLY =======================
@@ -277,6 +290,23 @@ admin.MapPost("/categories/{id:int}/image", async (int id, HttpRequest req, Db d
     if (error != null) return Bad(error);
     await c.ExecuteAsync("UPDATE Categories SET ImagePath=@path WHERE CategoryId=@id", new { path, id });
     return Results.Ok(new { ok = true });
+});
+
+admin.MapGet("/stats", async (Db db) =>
+{
+    using var c = db.Open();
+    var orders = await c.QueryFirstAsync(@"SELECT
+        IFNULL(SUM(CASE WHEN Status<>'Cancelled' AND DATE(CreatedAt)=CURDATE() THEN Total END),0) AS todaySales,
+        IFNULL(SUM(CASE WHEN DATE(CreatedAt)=CURDATE() THEN 1 ELSE 0 END),0) AS todayOrders,
+        IFNULL(SUM(CASE WHEN Status='Pending' THEN 1 ELSE 0 END),0) AS pendingOrders,
+        IFNULL(SUM(CASE WHEN Status<>'Cancelled' THEN Total END),0) AS totalSales FROM Orders");
+    var prods = await c.QueryFirstAsync(@"SELECT COUNT(*) AS products,
+        IFNULL(SUM(CASE WHEN Stock>0 AND Stock<=5 THEN 1 ELSE 0 END),0) AS lowStock,
+        IFNULL(SUM(CASE WHEN Stock=0 THEN 1 ELSE 0 END),0) AS outOfStock FROM Products");
+    var customers = await c.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM Users WHERE Role='Customer'");
+    var low = await c.QueryAsync("SELECT ProductId AS id, Name AS name, Stock AS stock, CategoryId AS categoryId FROM Products WHERE Stock<=5 ORDER BY Stock, Name LIMIT 6");
+    var recent = await c.QueryAsync(@"SELECT CONCAT(IF(Channel='Walk-in','WLK-','ORD-'), LPAD(OrderId,6,'0')) AS code, CustomerName AS customer, Total AS total, Status AS status FROM Orders ORDER BY OrderId DESC LIMIT 6");
+    return Results.Ok(new { orders, prods, customers, low, recent });
 });
 
 // ---- inventory ----

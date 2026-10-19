@@ -1,4 +1,4 @@
-// ACCOUNT PAGE (customers and admins): personal info, edit email/contact/password, order history (customers).
+// ACCOUNT PAGE (customers and admins): personal info, edit email/contact/password, order history with cancel (customers).
 (async function () {
   const $ = id => document.getElementById(id);
   let me;
@@ -34,11 +34,21 @@
       input.addEventListener('blur', () => { input.readOnly = true; raw[input.id] = input.value.trim(); saveProfile(); }, { once: true });
     });
   });
-  if (me.role !== 'Admin') {
+  async function loadOrders() {
     try {
       const rows = await api('/api/orders');
-      $('history-body').innerHTML = rows.length ? rows.map(o => `<tr><td>${esc(o.code)}</td><td>${fmtDateTime(o.date)}</td><td>${esc(o.items)}</td><td>${peso(o.total)}</td><td>${fmtDate(o.pickup)}</td><td><span class="sy-chip ${o.status === 'Completed' ? 'ok' : o.status === 'Cancelled' ? 'bad' : 'warn'}">${esc(o.status)}</span></td></tr>`).join('')
-        : '<tr><td colspan="6" class="sy-empty">No orders yet.</td></tr>';
+      $('history-body').innerHTML = rows.length ? rows.map(o => `<tr><td>${esc(o.code)}</td><td>${fmtDateTime(o.date)}</td><td>${esc(o.items)}</td><td>${peso(o.total)}</td><td>${fmtDate(o.pickup)}</td>
+        <td><span class="sy-chip ${o.status === 'Completed' ? 'ok' : o.status === 'Cancelled' ? 'bad' : 'warn'}">${esc(o.status)}</span></td>
+        <td>${o.status === 'Pending' ? `<button class="sy-x" data-cancel="${o.id}">Cancel</button>` : '-'}</td></tr>`).join('')
+        : '<tr><td colspan="7" class="sy-empty">No orders yet.</td></tr>';
     } catch (e) { /* ignore */ }
   }
+  if (me.role !== 'Admin') {
+    loadOrders();
+    $('history-body').addEventListener('click', async e => {
+      const id = e.target.dataset.cancel; if (!id || !confirm('Cancel this order? The items go back to stock.')) return;
+      try { await api('/api/orders/' + id + '/cancel', 'POST'); toast('Order cancelled.'); await loadOrders(); } catch (err) { toast(err.message, true); }
+    });
+  }
 })();
+function logoutUserClick() { logoutUser(); }

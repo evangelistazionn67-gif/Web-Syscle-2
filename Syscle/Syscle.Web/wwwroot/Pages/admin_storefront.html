@@ -14,7 +14,8 @@
     </div>
     <div class="nav-actions"><a href="adminhomepage.html"><img src="../Icons_and_Buttons/icon_settings.jpg" alt="Dashboard" class="nav-icon settings-icon"></a><a href="account.html"><img src="../Icons_and_Buttons/Icon_Account.jpg" alt="Account" class="nav-icon profile-icon"></a></div>
   </header>
-<main class="customer-dashboard"><div class="category-grid"></div></main>
+<div class="sy-page sy-toolbar"><div><button class="back-btn" onclick="location.href='adminhomepage.html'">&larr; Dashboard</button><h1>Store-front Config</h1><p class="sy-sub">Add bike types, give each a picture, then add the parts that belong to it.</p></div><button class="sy-btn accent" id="btn-add-category" type="button">+ Add Bike Category</button></div>
+  <main class="customer-dashboard"><div class="category-grid"></div></main>
   <div class="sy-modal" id="add-category-modal"><div class="sy-modal-box"><h3>Add Category</h3>
     <label>Category title</label><input type="text" id="new-category-name" maxlength="60">
     <label>Picture (optional, .jpg/.png/.webp under 2 MB)</label><input type="file" id="new-category-file" accept="image/*">
