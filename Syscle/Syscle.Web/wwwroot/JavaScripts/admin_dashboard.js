@@ -1,4 +1,3 @@
-// ADMIN DASHBOARD: today's numbers, what needs restocking, and the latest orders.
 (async function () {
   const box = document.getElementById('admin-stats');
   const chip = s => `<span class="sy-chip ${s === 'Completed' ? 'ok' : s === 'Cancelled' ? 'bad' : 'warn'}">${esc(s)}</span>`;
