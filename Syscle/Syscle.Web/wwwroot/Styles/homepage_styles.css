@@ -1,6 +1,4 @@
-/* ========================================= */
-/* MAIN DASHBOARD LAYOUT                     */
-/* ========================================= */
+
 .customer-dashboard {
     padding: 50px;
     display: flex;
@@ -15,9 +13,7 @@
     max-width: 900px;
 }
 
-/* ========================================= */
-/* IMAGE-BACKED CATEGORY CARDS               */
-/* ========================================= */
+
 .category-card.default-category {
     position: relative;
     border: 3px solid #000;
@@ -34,7 +30,7 @@
     transition: transform 0.1s, box-shadow 0.2s;
 }
 
-/* Dark overlay so the white text is readable over any image */
+
 .category-card.default-category::before {
     content: "";
     position: absolute;
@@ -43,7 +39,7 @@
     z-index: 1;
 }
 
-/* Hollow text styling (White fill, Black outline) */
+
 .category-card.default-category h3 {
     position: relative;
     z-index: 2; 
@@ -69,7 +65,7 @@
     transform: scale(0.98);
 }
 
-/* Responsive collapse for small screens */
+
 @media screen and (max-width: 768px) {
     .category-grid {
         grid-template-columns: 1fr; 
