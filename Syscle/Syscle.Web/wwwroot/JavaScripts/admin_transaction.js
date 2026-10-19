@@ -1,4 +1,3 @@
-// ADMIN: WALK-IN TRANSACTION (point of sale). Stock and prices are re-checked on the server.
 (async function () {
   const $ = id => document.getElementById(id);
   let products = [], lines = [];
