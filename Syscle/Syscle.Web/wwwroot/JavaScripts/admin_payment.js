@@ -1,4 +1,3 @@
-// ADMIN: PAYMENT SETUP. Turn Cash / GCash on or off and save the GCash account details.
 (async function () {
   const $ = id => document.getElementById(id);
   const btns = [...document.querySelectorAll('.toggle-btn')];
