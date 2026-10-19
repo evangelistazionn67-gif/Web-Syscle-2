@@ -1,13 +1,8 @@
-/* ========================================= */
-/* ADMIN SPECIFIC HEADER RULES               */
-/* ========================================= */
 .nav-icon.settings-icon {
-    border-radius: 50%; /* Forces the settings icon to be a perfect circle */
+    border-radius: 50%; 
 }
 
-/* ========================================= */
-/* ADMIN DASHBOARD GRID LAYOUT               */
-/* ========================================= */
+
 .admin-dashboard {
     padding: 50px;
     display: flex;
@@ -22,9 +17,7 @@
     max-width: 900px;
 }
 
-/* ========================================= */
-/* IMAGE-BACKED MODULE CARDS                 */
-/* ========================================= */
+
 .admin-module-card {
     position: relative;
     border: 3px solid #000; 
