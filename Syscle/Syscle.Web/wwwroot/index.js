@@ -1,15 +1,10 @@
-// ==========================================
-// 1. SWITCH BETWEEN LOGIN / SIGN UP / FORGOT PASSWORD (same as your original)
-// ==========================================
 const boxes = { login: 'login-container', register: 'register-container', forgot: 'forgot-container' };
 function show(which) { Object.entries(boxes).forEach(([k, id]) => { const el = document.getElementById(id); if (el) el.style.display = k === which ? 'block' : 'none'; }); }
 const wire = (id, which) => { const el = document.getElementById(id); if (el) el.addEventListener('click', e => { e.preventDefault(); show(which); }); };
 wire('link-to-register', 'register'); wire('link-to-login-from-reg', 'login');
 wire('link-to-forgot', 'forgot'); wire('link-to-login-from-forgot', 'login');
 
-// ==========================================
-// 2. TALK TO THE SERVER (accounts now live in SQL Server, not account.txt)
-// ==========================================
+
 async function post(url, body) {
   const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'syscle' }, body: JSON.stringify(body) });
   let data = {}; try { data = await r.json(); } catch (e) { /* no body */ }
@@ -23,7 +18,7 @@ on('btn-login', async () => {
   if (!login || !password) return alert('Please enter your email/username and password.');
   const { ok, data } = await post('/api/auth/login', { login, password });
   if (!ok) return alert(data.error || 'Login failed.');
-  location.href = data.redirect;       // Admin -> admin dashboard, Customer -> storefront (decided by the server)
+  location.href = data.redirect;      
 });
 on('btn-register', async () => {
   const username = val('reg-username').trim(), email = val('reg-email').trim(), password = val('reg-password');
@@ -40,14 +35,12 @@ on('btn-reset', async () => {
   alert(data.message || 'Request sent.'); show('login');
 });
 
-// Already logged in? Skip the login screen.
+
 fetch('/api/auth/me').then(r => r.ok ? r.json() : null).then(me => {
   if (me) location.href = me.role === 'Admin' ? 'Pages/adminhomepage.html' : 'Pages/homepage.html';
 }).catch(() => {});
 
-// ==========================================
-// 3. WELCOME TEXT + SHOW/HIDE PASSWORD (eye button)
-// ==========================================
+
 document.title = 'Web-Syscle - Login';
 document.querySelectorAll('h1,h2,h3').forEach(h => { if (/Welcome to Syscle/i.test(h.textContent)) h.textContent = h.textContent.replace(/Welcome to Syscle/i, 'Welcome to Web-Syscle'); });
 const eyeCss = document.createElement('style');
