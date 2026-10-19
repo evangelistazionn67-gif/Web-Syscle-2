@@ -20,7 +20,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     o.SlidingExpiration = true;
     o.Events.OnRedirectToLogin = c => { if (c.Request.Path.StartsWithSegments("/api")) c.Response.StatusCode = 401; else c.Response.Redirect("/index.html"); return Task.CompletedTask; };
     o.Events.OnRedirectToAccessDenied = c => { if (c.Request.Path.StartsWithSegments("/api")) c.Response.StatusCode = 403; else c.Response.Redirect("/index.html"); return Task.CompletedTask; };
-    o.Events.OnValidatePrincipal = Auth.Validate;   // re-checks role/status in SQL on every request
+    o.Events.OnValidatePrincipal = Auth.Validate;
 });
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy("Admin", p => p.RequireRole("Admin"))
@@ -35,7 +35,7 @@ app.Use(async (ctx, next) =>
 {
     ctx.Response.Headers["X-Content-Type-Options"] = "nosniff";
     ctx.Response.Headers["X-Frame-Options"] = "DENY";
-    // CSRF hardening: every state-changing API call must carry this header (a cross-site form cannot add it)
+    
     if (ctx.Request.Path.StartsWithSegments("/api") && !HttpMethods.IsGet(ctx.Request.Method) && ctx.Request.Headers["X-Requested-With"] != "syscle")
     {
         ctx.Response.StatusCode = 400;
@@ -278,7 +278,7 @@ admin.MapPost("/categories", async (HttpRequest req, Db db, IWebHostEnvironment 
 admin.MapDelete("/categories/{id:int}", async (int id, Db db) =>
 {
     using var c = db.Open();
-    await c.ExecuteAsync("DELETE FROM Categories WHERE CategoryId=@id", new { id });   // its products go with it; order history is kept
+    await c.ExecuteAsync("DELETE FROM Categories WHERE CategoryId=@id", new { id });   
     return Results.Ok(new { ok = true });
 });
 
