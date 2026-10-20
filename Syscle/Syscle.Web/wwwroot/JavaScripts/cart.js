@@ -1,6 +1,7 @@
+// CART: list, promo code, pick-up date, payment choice, checkout. The server recalculates every total.
 (async function () {
   const $ = id => document.getElementById(id);
-  let cart = [], pct = 0, methods = [];
+  let cart = [], pct = 0, methods = [], bundleInfo = { discount: 0, applied: [] };
   const me = await api('/api/auth/me');
   $('cart-dynamic-title').textContent = me.username + '\u2019s Cart';
   $('summary-dynamic-name').textContent = me.username;
@@ -21,9 +22,11 @@
         <b>${peso(l.price * l.qty)}</b><button class="sy-x" data-rm="1">Remove</button></div>`);
       bd.insertAdjacentHTML('beforeend', `<div class="sy-row"><span>${esc(l.name)} (${peso(l.price)})</span><span>x ${l.qty}</span></div>`);
     });
-    $('total-cost').textContent = 'Total Cost: ' + peso(sub - Math.round(sub * pct) / 100) + (pct ? ` (${pct}% off)` : '');
+    bundleInfo.applied.forEach(b => bd.insertAdjacentHTML('beforeend', `<div class="sy-row"><span>Bundle: ${esc(b.name)} (${b.percent}% off)</span><span>-${peso(b.discount)}</span></div>`));
+    const after = sub - bundleInfo.discount;
+    $('total-cost').textContent = 'Total Cost: ' + peso(after - Math.round(after * pct) / 100) + (pct ? ` (${pct}% promo)` : '');
   }
-  async function load() { cart = await api('/api/cart'); render(); refreshCartBadge(); }
+  async function load() { cart = await api('/api/cart'); bundleInfo = await api('/api/cart/bundles'); render(); refreshCartBadge(); }
   async function setQty(id, q) { try { await api('/api/cart/' + id, 'PUT', { qty: q }); await load(); } catch (e) { toast(e.message, true); } }
   $('cart-items-container').addEventListener('click', e => {
     const card = e.target.closest('[data-id]'); if (!card) return;

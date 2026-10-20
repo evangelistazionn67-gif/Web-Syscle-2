@@ -1,3 +1,5 @@
+// Shared helpers for every page. Public file with no secrets: the server checks every request itself.
+let signedOutShown = false;
 async function api(url, method = 'GET', body) {
   const opt = { method, headers: { 'X-Requested-With': 'syscle' } };
   if (body instanceof FormData) opt.body = body;
@@ -5,7 +7,7 @@ async function api(url, method = 'GET', body) {
   const r = await fetch(url, opt);
   let data = null;
   try { data = await r.json(); } catch (e) { /* empty body */ }
-  if (r.status === 401) { location.href = '/index.html'; throw new Error('Please log in again.'); }
+  if (r.status === 401) { handleSignedOut(r.headers.get('X-Session-Reason')); throw new Error('Please log in again.'); }
   if (!r.ok) throw new Error((data && data.error) || 'Something went wrong. Please try again.');
   return data;
 }
@@ -22,22 +24,23 @@ function toast(msg, isError, linkText, linkHref) {
   setTimeout(() => t.remove(), linkHref ? 5000 : 3200);
 }
 async function logoutUser() {
+  signedOutShown = true;
   try { await api('/api/auth/logout', 'POST'); } catch (e) { /* already logged out */ }
   location.href = '/index.html';
 }
-
-function showModal(html) {
+// ---- pop-up layer (product details, order confirmation) ----
+function showModal(html, onClose) {
   const ov = document.createElement('div');
   ov.className = 'sy-ov';
   ov.innerHTML = '<div class="sy-ovbox" role="dialog" aria-modal="true"><button class="sy-ovx" aria-label="Close">&times;</button>' + html + '</div>';
-  const close = () => { ov.remove(); document.removeEventListener('keydown', onKey); };
+  const close = () => { ov.remove(); document.removeEventListener('keydown', onKey); if (onClose) onClose(); };
   const onKey = e => { if (e.key === 'Escape') close(); };
   ov.addEventListener('click', e => { if (e.target === ov || e.target.closest('.sy-ovx')) close(); });
   document.addEventListener('keydown', onKey);
   document.body.appendChild(ov);
   return { el: ov, close };
 }
-
+// ---- cart counter on the header cart icon, and the footer (customer pages only) ----
 async function refreshCartBadge() {
   const icon = document.querySelector('.cart-icon'); if (!icon) return;
   const link = icon.closest('a'); if (!link || link.style.display === 'none') return;
@@ -57,7 +60,7 @@ function addFooter() {
     '<div class="sy-fcopy">&copy; ' + new Date().getFullYear() + ' Web-Syscle. All rights reserved.</div>';
   document.body.appendChild(f);
 }
-
+// Header search: onSearch(text) filters the current page; with no handler, a customer search jumps to the home page results.
 function initHeader(onSearch) {
   const isShop = !!document.querySelector('.cart-icon');
   if (isShop) { refreshCartBadge(); addFooter(); }
@@ -71,7 +74,7 @@ function initHeader(onSearch) {
   if (go) go.addEventListener('click', submit);
   if (clr) clr.addEventListener('click', () => { input.value = ''; input.focus(); run(); });
 }
-
+// ---- Shared product card (Decathlon style). Clicking Buy / the picture / the name opens the product layer. ----
 const BASKET_SVG = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.7 12.4a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20.5 8H6"/></svg>';
 const stockTag = s => s === 0 ? 'Sold out' : s <= 5 ? 'Only ' + s + ' left' : '';
 function productCard(p) {
@@ -127,3 +130,19 @@ function sortItems(list, mode) {
   else if (mode === 'name') a.sort((x, y) => x.name.localeCompare(y.name));
   return a;
 }
+
+// ---- One login per account: when this session is replaced (or the account is suspended) we say so right away ----
+function handleSignedOut(reason) {
+  if (signedOutShown) return;
+  signedOutShown = true;
+  const msg = reason === 'suspended' ? 'Your account has been suspended. Please contact the store.'
+    : (reason === 'replaced' || reason === 'changed') ? 'You were signed out because this account was signed in somewhere else, or an admin signed it out.'
+    : 'Your session ended. Please log in again.';
+  showModal(`<div class="sy-done"><h2>You have been signed out</h2><p>${msg}</p><div class="sy-pm-actions"><a class="sy-btn accent" href="/index.html">Back to login</a></div></div>`, () => { location.href = '/index.html'; });
+}
+function startSessionWatch() {
+  const ping = async () => { try { await api('/api/auth/ping'); } catch (e) { /* handled in api() */ } };
+  setInterval(ping, 5000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) ping(); });
+}
+startSessionWatch();

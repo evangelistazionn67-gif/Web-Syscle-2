@@ -1,7 +1,10 @@
+// ACCOUNT PAGE (customers and admins): personal info, edit email/contact/password, order history with cancel (customers).
 (async function () {
   const $ = id => document.getElementById(id);
   let me;
   try { me = await api('/api/auth/me'); } catch (e) { return; }
+  const idEl = $('acct-id');
+  if (idEl) idEl.textContent = (me.role === 'Admin' ? 'Admin ID: A-' : 'Customer ID: C-') + String(me.userId).padStart(6, '0');
   const back = $('back-link');
   if (me.role === 'Admin') {
     back.href = 'adminhomepage.html'; back.textContent = '\u2190 Back to Dashboard';

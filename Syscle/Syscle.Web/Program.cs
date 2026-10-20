@@ -5,11 +5,19 @@ using System.Text.RegularExpressions;
 using Dapper;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.HttpOverrides;
 using MySqlConnector;
 
 var builder = WebApplication.CreateBuilder(args);
 var cs = builder.Configuration.GetConnectionString("Syscle") ?? throw new InvalidOperationException("Missing ConnectionStrings:Syscle in appsettings.json");
 builder.Services.AddSingleton(new Db(cs));
+// Behind a host such as Render the browser talks HTTPS to the host, which forwards plain HTTP to us.
+builder.Services.Configure<ForwardedHeadersOptions>(o =>
+{
+    o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    o.KnownNetworks.Clear();
+    o.KnownProxies.Clear();
+});
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(o =>
 {
@@ -18,15 +26,16 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     o.Cookie.SameSite = SameSiteMode.Lax;
     o.ExpireTimeSpan = TimeSpan.FromHours(8);
     o.SlidingExpiration = true;
-    o.Events.OnRedirectToLogin = c => { if (c.Request.Path.StartsWithSegments("/api")) c.Response.StatusCode = 401; else c.Response.Redirect("/index.html"); return Task.CompletedTask; };
+    o.Events.OnRedirectToLogin = c => { if (c.Request.Path.StartsWithSegments("/api")) { c.Response.StatusCode = 401; if (c.HttpContext.Items["sy-reason"] is string why) c.Response.Headers["X-Session-Reason"] = why; } else c.Response.Redirect("/index.html"); return Task.CompletedTask; };
     o.Events.OnRedirectToAccessDenied = c => { if (c.Request.Path.StartsWithSegments("/api")) c.Response.StatusCode = 403; else c.Response.Redirect("/index.html"); return Task.CompletedTask; };
-    o.Events.OnValidatePrincipal = Auth.Validate;
+    o.Events.OnValidatePrincipal = Auth.Validate;   // re-checks role/status in SQL on every request
 });
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy("Admin", p => p.RequireRole("Admin"))
     .AddPolicy("Customer", p => p.RequireRole("Customer"));
 
 var app = builder.Build();
+app.UseForwardedHeaders();
 await Seed.RunAsync(cs, builder.Configuration);
 
 app.UseAuthentication();
@@ -35,14 +44,14 @@ app.Use(async (ctx, next) =>
 {
     ctx.Response.Headers["X-Content-Type-Options"] = "nosniff";
     ctx.Response.Headers["X-Frame-Options"] = "DENY";
-    
+    // CSRF hardening: every state-changing API call must carry this header (a cross-site form cannot add it)
     if (ctx.Request.Path.StartsWithSegments("/api") && !HttpMethods.IsGet(ctx.Request.Method) && ctx.Request.Headers["X-Requested-With"] != "syscle")
     {
         ctx.Response.StatusCode = 400;
         await ctx.Response.WriteAsJsonAsync(new { error = "Bad request." });
         return;
     }
-
+    // Page gate: admin pages/scripts are Admin only, shop pages are Customer only
     var need = Gate.Required(ctx.Request.Path.Value ?? "");
     if (need != null)
     {
@@ -60,7 +69,7 @@ IResult Conflict(string m) => Results.Conflict(new { error = m });
 int Uid(ClaimsPrincipal u) => int.Parse(u.FindFirstValue(ClaimTypes.NameIdentifier)!);
 string? Nz(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
 
-
+// ======================= AUTH (public) =======================
 var auth = app.MapGroup("/api/auth");
 var tries = new ConcurrentDictionary<string, List<DateTime>>();
 
@@ -73,7 +82,7 @@ auth.MapPost("/register", async (RegisterReq r, Db db) =>
     using var c = db.Open();
     var taken = await c.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM Users WHERE Username=@username OR Email=@email", new { username, email });
     if (taken > 0) return Conflict("That username or email is already registered.");
-
+    // Role is fixed here: public sign-up can only ever create a Customer.
     await c.ExecuteAsync("INSERT INTO Users(Username,Email,PasswordHash,Role) VALUES(@username,@email,@h,'Customer')", new { username, email, h = Pw.Hash(r.Password!) });
     return Results.Ok(new { ok = true });
 });
@@ -92,10 +101,13 @@ auth.MapPost("/login", async (LoginReq r, Db db, HttpContext ctx) =>
     var u = await c.QueryFirstOrDefaultAsync<UserRow>("SELECT UserId,Username,PasswordHash,Role,Status,SessionVersion FROM Users WHERE Username=@l OR Email=@l LIMIT 1", new { l = (r.Login ?? "").Trim() });
     if (u is null || !Pw.Verify(r.Password ?? "", u.PasswordHash)) return Results.Json(new { error = "Invalid credentials. Please try again." }, statusCode: 401);
     if (u.Status != "Active") return Results.Json(new { error = "This account is suspended. Please contact the store admin." }, statusCode: 403);
+    // One active session per account: signing in again ends any older session (that browser is told on its next check).
+    await c.ExecuteAsync("UPDATE Users SET SessionVersion = SessionVersion + 1 WHERE UserId=@id", new { id = u.UserId });
+    var newVer = await c.ExecuteScalarAsync<int>("SELECT SessionVersion FROM Users WHERE UserId=@id", new { id = u.UserId });
     var claims = new List<Claim>
     {
         new(ClaimTypes.NameIdentifier, u.UserId.ToString()), new(ClaimTypes.Name, u.Username),
-        new(ClaimTypes.Role, u.Role), new("ver", u.SessionVersion.ToString())
+        new(ClaimTypes.Role, u.Role), new("ver", newVer.ToString())
     };
     await ctx.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme)));
     return Results.Ok(new { username = u.Username, role = u.Role, redirect = u.Role == "Admin" ? "Pages/adminhomepage.html" : "Pages/homepage.html" });
@@ -113,10 +125,12 @@ auth.MapPost("/forgot", async (ForgotReq r, Db db) =>
 auth.MapGet("/me", async (ClaimsPrincipal u, Db db) =>
 {
     using var c = db.Open();
-    return Results.Ok(await c.QueryFirstAsync("SELECT Username AS username, Email AS email, IFNULL(Phone,'') AS phone, Role AS role FROM Users WHERE UserId=@id", new { id = Uid(u) }));
+    return Results.Ok(await c.QueryFirstAsync("SELECT UserId AS userId, Username AS username, Email AS email, IFNULL(Phone,'') AS phone, Role AS role FROM Users WHERE UserId=@id", new { id = Uid(u) }));
 }).RequireAuthorization();
 
+auth.MapGet("/ping", () => Results.Ok(new { ok = true })).RequireAuthorization();   // the browser asks every few seconds so an old session learns quickly that it was replaced
 
+// ======================= ANY LOGGED-IN USER =======================
 var me = app.MapGroup("/api/me").RequireAuthorization();
 me.MapPut("/profile", async (ProfileReq r, ClaimsPrincipal u, Db db) =>
 {
@@ -138,7 +152,7 @@ me.MapPost("/password", async (PasswordReq r, ClaimsPrincipal u, Db db) =>
     return Results.Ok(new { ok = true });
 });
 
-
+// ======================= PUBLIC CATALOG =======================
 app.MapGet("/api/categories", async (Db db) =>
 {
     using var c = db.Open();
@@ -152,7 +166,14 @@ app.MapGet("/api/products", async (string? category, Db db) =>
         WHERE (@category IS NULL OR c.Name = @category) ORDER BY p.Name", new { category = Nz(category) }));
 });
 
+app.MapGet("/api/bundles", async (Db db, IConfiguration cfg) =>
+{
+    using var c = db.Open();
+    await Bundles.RefreshIfStale(c, cfg.GetValue("Bundles:SlowDays", 30), false);
+    return Results.Ok(await Bundles.ListAsync(c, true));
+});
 
+// ======================= CUSTOMER ONLY =======================
 var shop = app.MapGroup("/api").RequireAuthorization("Customer");
 
 shop.MapGet("/cart", async (ClaimsPrincipal u, Db db) =>
@@ -177,12 +198,40 @@ shop.MapPut("/cart/{productId:int}", async (int productId, QtyReq r, ClaimsPrinc
 {
     using var c = db.Open();
     var uid = Uid(u);
+    var oldQty = await c.ExecuteScalarAsync<int?>("SELECT Qty FROM CartItems WHERE UserId=@uid AND ProductId=@productId", new { uid, productId }) ?? 0;
+    if (r.Qty < oldQty) await c.ExecuteAsync("DELETE cb FROM CartBundles cb JOIN BundleItems bi ON bi.BundleId = cb.BundleId WHERE cb.UserId=@uid AND bi.ProductId=@productId", new { uid, productId });
     if (r.Qty <= 0) { await c.ExecuteAsync("DELETE FROM CartItems WHERE UserId=@uid AND ProductId=@productId", new { uid, productId }); return Results.Ok(new { ok = true }); }
     var stock = await c.ExecuteScalarAsync<int?>("SELECT Stock FROM Products WHERE ProductId=@productId", new { productId });
     if (stock is null) return Results.NotFound(new { error = "That product is no longer available." });
     if (r.Qty > stock) return Conflict($"Only {stock} in stock.");
     await c.ExecuteAsync("UPDATE CartItems SET Qty=@qty WHERE UserId=@uid AND ProductId=@productId", new { qty = r.Qty, uid, productId });
     return Results.Ok(new { ok = true });
+});
+shop.MapPost("/cart/bundle", async (BundleAddReq r, ClaimsPrincipal u, Db db) =>
+{
+    if (r.Qty < 1 || r.Qty > 20) return Bad("Quantity must be between 1 and 20.");
+    using var c = db.Open();
+    using var tx = c.BeginTransaction();
+    var uid = Uid(u);
+    if (await c.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM Bundles WHERE BundleId=@id AND IsActive=1", new { id = r.BundleId }, tx) == 0) return Results.NotFound(new { error = "That bundle offer is no longer available." });
+    var items = (await c.QueryAsync<BundleStock>("SELECT bi.ProductId, bi.Qty, p.Stock, p.Name FROM BundleItems bi JOIN Products p ON p.ProductId = bi.ProductId WHERE bi.BundleId=@id", new { id = r.BundleId }, tx)).ToList();
+    if (items.Count < 2) return Bad("That bundle is not complete.");
+    foreach (var i in items)
+    {
+        var have = await c.ExecuteScalarAsync<int?>("SELECT Qty FROM CartItems WHERE UserId=@uid AND ProductId=@pid", new { uid, pid = i.ProductId }, tx) ?? 0;
+        if (have + i.Qty * r.Qty > i.Stock) return Conflict($"Not enough stock for {i.Name}.");
+    }
+    foreach (var i in items)
+        await c.ExecuteAsync("INSERT INTO CartItems(UserId,ProductId,Qty) VALUES(@uid,@pid,@q) ON DUPLICATE KEY UPDATE Qty = Qty + @q", new { uid, pid = i.ProductId, q = i.Qty * r.Qty }, tx);
+    await c.ExecuteAsync("INSERT INTO CartBundles(UserId,BundleId,Qty) VALUES(@uid,@bid,@q) ON DUPLICATE KEY UPDATE Qty = Qty + @q", new { uid, bid = r.BundleId, q = r.Qty }, tx);
+    tx.Commit();
+    return Results.Ok(new { ok = true });
+});
+shop.MapGet("/cart/bundles", async (ClaimsPrincipal u, Db db) =>
+{
+    using var c = db.Open();
+    var (discount, applied) = await Bundles.ForCart(c, Uid(u), null);
+    return Results.Ok(new { discount, applied });
 });
 shop.MapPost("/promo", async (PromoReq r, Db db) =>
 {
@@ -198,7 +247,7 @@ shop.MapGet("/payment-methods", async (Db db) =>
 shop.MapPost("/checkout", async (CheckoutReq r, ClaimsPrincipal u, Db db) =>
 {
     using var c = db.Open();
-    using var tx = c.BeginTransaction();         
+    using var tx = c.BeginTransaction();          // disposed without Commit() = rolled back
     var uid = Uid(u);
     var lines = (await c.QueryAsync<Line>("SELECT p.ProductId, p.Name, p.Price, ci.Qty FROM CartItems ci JOIN Products p ON p.ProductId=ci.ProductId WHERE ci.UserId=@uid", new { uid }, tx)).ToList();
     if (lines.Count == 0) return Bad("Your list is empty.");
@@ -213,17 +262,19 @@ shop.MapPost("/checkout", async (CheckoutReq r, ClaimsPrincipal u, Db db) =>
         if (found is null) return Bad("That promo code is not valid.");
         pct = found.Value;
     }
-    var sub = lines.Sum(l => l.Price * l.Qty);              
-    var discount = Math.Round(sub * pct / 100m, 2);
-    var total = sub - discount;
+    var sub = lines.Sum(l => l.Price * l.Qty);                // prices always come from SQL, never from the browser
+    var (bundleDiscount, _) = await Bundles.ForCart(c, uid, tx);
+    var discount = Math.Round((sub - bundleDiscount) * pct / 100m, 2);
+    var total = sub - bundleDiscount - discount;
     var name = await c.ExecuteScalarAsync<string>("SELECT Username FROM Users WHERE UserId=@uid", new { uid }, tx);
-    await c.ExecuteAsync(@"INSERT INTO Orders(UserId,CustomerName,Channel,PaymentMethod,PromoCode,Discount,Total,Status,PickupDate)
-        VALUES(@uid,@name,'Online',@method,@code,@discount,@total,'Pending',@pickup)",
-        new { uid, name, method, code, discount, total, pickup = r.PickupDate.Value.Date }, tx);
+    await c.ExecuteAsync(@"INSERT INTO Orders(UserId,CustomerName,Channel,PaymentMethod,PromoCode,Discount,BundleDiscount,Total,Status,PickupDate)
+        VALUES(@uid,@name,'Online',@method,@code,@discount,@bundleDiscount,@total,'Pending',@pickup)",
+        new { uid, name, method, code, discount, bundleDiscount, total, pickup = r.PickupDate.Value.Date }, tx);
     var orderId = await c.ExecuteScalarAsync<int>("SELECT CAST(LAST_INSERT_ID() AS SIGNED)", null, tx);
     var soldOut = await Orders.TakeStock(c, tx, orderId, lines);
     if (soldOut != null) return Conflict($"Sorry, {soldOut} just ran out of stock. Please update your list.");
     await c.ExecuteAsync("DELETE FROM CartItems WHERE UserId=@uid", new { uid }, tx);
+    await c.ExecuteAsync("DELETE FROM CartBundles WHERE UserId=@uid", new { uid }, tx);
     var orderCode = "ORD-" + orderId.ToString("D6");
     tx.Commit();
     return Results.Ok(new { orderCode, total });
@@ -249,10 +300,10 @@ shop.MapPost("/orders/{id:int}/cancel", async (int id, ClaimsPrincipal u, Db db)
     return Results.Ok(new { ok = true });
 });
 
-
+// ======================= ADMIN ONLY =======================
 var admin = app.MapGroup("/api/admin").RequireAuthorization("Admin");
 
-
+// ---- storefront categories ----
 admin.MapPost("/categories", async (HttpRequest req, Db db, IWebHostEnvironment env) =>
 {
     var form = await req.ReadFormAsync();
@@ -278,7 +329,7 @@ admin.MapPost("/categories", async (HttpRequest req, Db db, IWebHostEnvironment 
 admin.MapDelete("/categories/{id:int}", async (int id, Db db) =>
 {
     using var c = db.Open();
-    await c.ExecuteAsync("DELETE FROM Categories WHERE CategoryId=@id", new { id });   
+    await c.ExecuteAsync("DELETE FROM Categories WHERE CategoryId=@id", new { id });   // its products go with it; order history is kept
     return Results.Ok(new { ok = true });
 });
 
@@ -309,7 +360,45 @@ admin.MapGet("/stats", async (Db db) =>
     return Results.Ok(new { orders, prods, customers, low, recent });
 });
 
+admin.MapGet("/bundles", async (Db db, IConfiguration cfg) =>
+{
+    using var c = db.Open();
+    return Results.Ok(new { slowDays = cfg.GetValue("Bundles:SlowDays", 30), bundles = await Bundles.ListAsync(c, false) });
+});
+admin.MapPost("/bundles/generate", async (Db db, IConfiguration cfg) =>
+{
+    using var c = db.Open();
+    return Results.Ok(new { made = await Bundles.GenerateAsync(c, cfg.GetValue("Bundles:SlowDays", 30)) });
+});
+admin.MapPost("/bundles", async (BundleNewReq r, Db db) =>
+{
+    if (r.ProductA == r.ProductB) return Bad("Pick two different products.");
+    if (r.DiscountPercent < 5 || r.DiscountPercent > 10) return Bad("Discount must be between 5% and 10%.");
+    using var c = db.Open();
+    var names = (await c.QueryAsync<string>("SELECT Name FROM Products WHERE ProductId IN (@a,@b)", new { a = r.ProductA, b = r.ProductB })).ToList();
+    if (names.Count != 2) return Bad("One of the products does not exist.");
+    var name = string.IsNullOrWhiteSpace(r.Name) ? string.Join(" + ", names) : r.Name.Trim();
+    if (name.Length > 160) name = name[..160];
+    await c.ExecuteAsync("INSERT INTO Bundles(Name,DiscountPercent,IsActive,AutoMade) VALUES(@name,@pct,1,0)", new { name, pct = r.DiscountPercent });
+    var id = await c.ExecuteScalarAsync<int>("SELECT CAST(LAST_INSERT_ID() AS SIGNED)");
+    await c.ExecuteAsync("INSERT INTO BundleItems(BundleId,ProductId,Qty) VALUES(@id,@a,1),(@id,@b,1)", new { id, a = r.ProductA, b = r.ProductB });
+    return Results.Ok(new { ok = true });
+});
+admin.MapPut("/bundles/{id:int}", async (int id, BundleEditReq r, Db db) =>
+{
+    if (r.DiscountPercent is < 5 or > 10) return Bad("Discount must be between 5% and 10%.");
+    using var c = db.Open();
+    var n = await c.ExecuteAsync("UPDATE Bundles SET DiscountPercent = IFNULL(@pct, DiscountPercent), IsActive = IFNULL(@act, IsActive) WHERE BundleId=@id", new { id, pct = r.DiscountPercent, act = r.IsActive });
+    return n == 0 ? Results.NotFound(new { error = "Bundle not found." }) : Results.Ok(new { ok = true });
+});
+admin.MapDelete("/bundles/{id:int}", async (int id, Db db) =>
+{
+    using var c = db.Open();
+    await c.ExecuteAsync("DELETE FROM Bundles WHERE BundleId=@id", new { id });
+    return Results.Ok(new { ok = true });
+});
 
+// ---- inventory ----
 admin.MapGet("/products", async (Db db) =>
 {
     using var c = db.Open();
@@ -367,7 +456,7 @@ admin.MapPost("/products/{id:int}/image", async (int id, HttpRequest req, Db db,
     return Results.Ok(new { ok = true });
 });
 
-
+// ---- transactions ----
 admin.MapGet("/transactions", async (string? search, string? status, string? range, Db db) =>
 {
     DateTime? since = range switch { "today" => DateTime.Today, "7" => DateTime.Today.AddDays(-6), "30" => DateTime.Today.AddDays(-29), _ => null };
@@ -428,7 +517,7 @@ admin.MapPut("/transactions/{id:int}/status", async (int id, StatusReq r, Db db)
     return Results.Ok(new { ok = true });
 });
 
-
+// ---- payment setup ----
 admin.MapGet("/payment-methods", async (Db db) =>
 {
     using var c = db.Open();
@@ -443,7 +532,7 @@ admin.MapPut("/payment-methods", async (List<MethodReq> list, Db db) =>
     return Results.Ok(new { ok = true });
 });
 
-
+// ---- account management ----
 admin.MapGet("/accounts", async (Db db) =>
 {
     using var c = db.Open();
@@ -479,7 +568,7 @@ admin.MapPost("/accounts/{id:int}/password", async (int id, PasswordSetReq r, Cl
 {
     if ((r.Password ?? "").Length < 8) return Bad("Password must be at least 8 characters.");
     using var c = db.Open();
-    var bump = id == Uid(u) ? 0 : 1;  
+    var bump = id == Uid(u) ? 0 : 1;   // changing someone else's password signs them out
     await c.ExecuteAsync("UPDATE Users SET PasswordHash=@h, FpRequest=0, SessionVersion=SessionVersion+@bump WHERE UserId=@id", new { h = Pw.Hash(r.Password!), bump, id });
     return Results.Ok(new { ok = true });
 });
@@ -493,7 +582,7 @@ admin.MapDelete("/accounts/{id:int}", async (int id, ClaimsPrincipal u, Db db) =
 
 app.Run();
 
-
+// ======================= types =======================
 record RegisterReq(string? Username, string? Email, string? Password);
 record LoginReq(string? Login, string? Password);
 record ForgotReq(string? Email);
@@ -512,6 +601,9 @@ record MethodReq(string Code, bool IsOn, string? AccountNumber, string? AccountN
 record NewAdminReq(string? Username, string? Email, string? Password);
 record SuspendReq(bool Suspend);
 record PasswordSetReq(string? Password);
+record BundleAddReq(int BundleId, int Qty);
+record BundleNewReq(int ProductA, int ProductB, int DiscountPercent, string? Name);
+record BundleEditReq(int? DiscountPercent, bool? IsActive);
 
 class UserRow { public int UserId { get; set; } public string Username { get; set; } = ""; public string PasswordHash { get; set; } = ""; public string Role { get; set; } = ""; public string Status { get; set; } = ""; public int SessionVersion { get; set; } }
 class SessionRow { public string Role { get; set; } = ""; public string Status { get; set; } = ""; public int SessionVersion { get; set; } }
@@ -524,9 +616,105 @@ class Db
     public MySqlConnection Open() { var c = new MySqlConnection(_cs); c.Open(); return c; }
 }
 
+class BundleRow { public int BundleId { get; set; } public string Name { get; set; } = ""; public int DiscountPercent { get; set; } public bool IsActive { get; set; } public bool AutoMade { get; set; } }
+class BundleItemRow { public int BundleId { get; set; } public int ProductId { get; set; } public string Name { get; set; } = ""; public decimal Price { get; set; } public int Stock { get; set; } public string? Image { get; set; } public int Qty { get; set; } }
+class BundleStock { public int ProductId { get; set; } public int Qty { get; set; } public int Stock { get; set; } public string Name { get; set; } = ""; }
+class BundlePriceRow { public int ProductId { get; set; } public int Qty { get; set; } public decimal Price { get; set; } }
+class CartQty { public int ProductId { get; set; } public int Qty { get; set; } }
+class CartBundleRow { public int BundleId { get; set; } public int Qty { get; set; } public string Name { get; set; } = ""; public int DiscountPercent { get; set; } }
+class Cand { public int ProductId { get; set; } public string Name { get; set; } = ""; public string ItemType { get; set; } = ""; public decimal Price { get; set; } public int Stock { get; set; } public int IdleDays { get; set; } public decimal Sold { get; set; } }
+
+static class Bundles
+{
+    static readonly SemaphoreSlim Lock = new(1, 1);
+    static DateTime _last = DateTime.MinValue;
+
+    // Looks for parts that have not sold for a while and pairs each with a popular part at a 5-10% discount (older = bigger discount).
+    public static async Task RefreshIfStale(MySqlConnection c, int slowDays, bool force)
+    {
+        if (!force && DateTime.UtcNow - _last < TimeSpan.FromMinutes(10)) return;
+        await Lock.WaitAsync();
+        try
+        {
+            if (!force && DateTime.UtcNow - _last < TimeSpan.FromMinutes(10)) return;
+            await GenerateAsync(c, slowDays);
+            _last = DateTime.UtcNow;
+        }
+        finally { Lock.Release(); }
+    }
+
+    public static async Task<int> GenerateAsync(MySqlConnection c, int slowDays)
+    {
+        var all = (await c.QueryAsync<Cand>(@"SELECT p.ProductId, p.Name, p.ItemType, p.Price, p.Stock,
+                DATEDIFF(NOW(), IFNULL((SELECT MAX(o.CreatedAt) FROM OrderItems oi JOIN Orders o ON o.OrderId = oi.OrderId WHERE oi.ProductId = p.ProductId AND o.Status <> 'Cancelled'), p.AddedAt)) AS IdleDays,
+                IFNULL((SELECT SUM(oi.Qty) FROM OrderItems oi JOIN Orders o ON o.OrderId = oi.OrderId WHERE oi.ProductId = p.ProductId AND o.Status <> 'Cancelled'), 0) AS Sold
+            FROM Products p WHERE p.Stock > 0")).ToList();
+        var used = (await c.QueryAsync<int>("SELECT DISTINCT ProductId FROM BundleItems")).ToHashSet();
+        var slow = all.Where(p => p.IdleDays >= slowDays && !used.Contains(p.ProductId)).OrderByDescending(p => p.IdleDays).Take(6).ToList();
+        var made = 0;
+        foreach (var s in slow)
+        {
+            if (used.Contains(s.ProductId)) continue;
+            var others = all.Where(p => p.ProductId != s.ProductId && !used.Contains(p.ProductId)).ToList();
+            var partner = others.Where(p => p.ItemType != s.ItemType).OrderByDescending(p => p.Sold).ThenBy(p => p.IdleDays).ThenBy(p => p.Price).FirstOrDefault()
+                          ?? others.OrderByDescending(p => p.Sold).ThenBy(p => p.IdleDays).FirstOrDefault();
+            if (partner is null) continue;
+            var pct = Math.Min(10, 5 + Math.Max(0, s.IdleDays - slowDays) / 10);
+            var name = s.Name + " + " + partner.Name;
+            if (name.Length > 160) name = name[..160];
+            await c.ExecuteAsync("INSERT INTO Bundles(Name,DiscountPercent,IsActive,AutoMade) VALUES(@name,@pct,1,1)", new { name, pct });
+            var id = await c.ExecuteScalarAsync<int>("SELECT CAST(LAST_INSERT_ID() AS SIGNED)");
+            await c.ExecuteAsync("INSERT INTO BundleItems(BundleId,ProductId,Qty) VALUES(@id,@a,1),(@id,@b,1)", new { id, a = s.ProductId, b = partner.ProductId });
+            used.Add(s.ProductId); used.Add(partner.ProductId); made++;
+        }
+        return made;
+    }
+
+    public static async Task<List<object>> ListAsync(MySqlConnection c, bool activeOnly)
+    {
+        var heads = (await c.QueryAsync<BundleRow>("SELECT BundleId, Name, DiscountPercent, IsActive, AutoMade FROM Bundles ORDER BY BundleId DESC")).ToList();
+        var items = (await c.QueryAsync<BundleItemRow>("SELECT bi.BundleId, p.ProductId, p.Name, p.Price, p.Stock, p.ImagePath AS Image, bi.Qty FROM BundleItems bi JOIN Products p ON p.ProductId = bi.ProductId")).ToList();
+        var list = new List<object>();
+        foreach (var h in heads)
+        {
+            var its = items.Where(i => i.BundleId == h.BundleId).ToList();
+            if (its.Count < 2) continue;
+            var inStock = its.All(i => i.Stock >= i.Qty);
+            if (activeOnly && (!h.IsActive || !inStock)) continue;
+            var listPrice = its.Sum(i => i.Price * i.Qty);
+            var price = Math.Round(listPrice * (100 - h.DiscountPercent) / 100m, 2);
+            list.Add(new { id = h.BundleId, name = h.Name, discountPercent = h.DiscountPercent, isActive = h.IsActive, auto = h.AutoMade, inStock, listPrice, price, saving = listPrice - price,
+                items = its.Select(i => new { id = i.ProductId, name = i.Name, price = i.Price, image = i.Image, qty = i.Qty }).ToList() });
+        }
+        return list;
+    }
+
+    // How much the bundles in this customer's cart save. A bundle only counts while its parts are still in the cart.
+    public static async Task<(decimal discount, List<object> applied)> ForCart(MySqlConnection c, int uid, MySqlTransaction? tx)
+    {
+        var cart = (await c.QueryAsync<CartQty>("SELECT ProductId, Qty FROM CartItems WHERE UserId=@uid", new { uid }, tx)).ToDictionary(x => x.ProductId, x => x.Qty);
+        var cbs = (await c.QueryAsync<CartBundleRow>("SELECT cb.BundleId, cb.Qty, b.Name, b.DiscountPercent FROM CartBundles cb JOIN Bundles b ON b.BundleId = cb.BundleId WHERE cb.UserId=@uid AND b.IsActive=1 ORDER BY cb.BundleId", new { uid }, tx)).ToList();
+        decimal total = 0;
+        var applied = new List<object>();
+        foreach (var cb in cbs)
+        {
+            var its = (await c.QueryAsync<BundlePriceRow>("SELECT bi.ProductId, bi.Qty, p.Price FROM BundleItems bi JOIN Products p ON p.ProductId = bi.ProductId WHERE bi.BundleId=@id", new { id = cb.BundleId }, tx)).ToList();
+            if (its.Count < 2) continue;
+            var n = cb.Qty;
+            foreach (var i in its) n = Math.Min(n, (cart.TryGetValue(i.ProductId, out var have) ? have : 0) / i.Qty);
+            if (n <= 0) continue;
+            foreach (var i in its) cart[i.ProductId] -= i.Qty * n;
+            var d = Math.Round(its.Sum(i => i.Price * i.Qty) * n * cb.DiscountPercent / 100m, 2);
+            total += d;
+            applied.Add(new { bundleId = cb.BundleId, name = cb.Name, qty = n, percent = cb.DiscountPercent, discount = d });
+        }
+        return (total, applied);
+    }
+}
+
 static class Pics
 {
-  
+    // Saves an uploaded picture under wwwroot/<folder>/ with a random name and returns its web path.
     public static async Task<(string? path, string? error)> SaveAsync(HttpRequest req, string webRoot, string folder, string prefix, long maxBytes)
     {
         var form = await req.ReadFormAsync();
@@ -544,7 +732,7 @@ static class Pics
 
 static class Orders
 {
- 
+    // Takes stock atomically (the WHERE Stock>=@q stops two buyers overselling) and records the order lines.
     public static async Task<string?> TakeStock(MySqlConnection c, MySqlTransaction tx, int orderId, List<Line> lines)
     {
         foreach (var l in lines)
@@ -560,7 +748,7 @@ static class Orders
 
 static class Gate
 {
-
+    // Default-deny for everything under /Pages and /JavaScripts. Only error.html and api.js are public.
     public static string? Required(string path)
     {
         var p = path.ToLowerInvariant();
@@ -603,7 +791,7 @@ static class Pw
 
 static class Auth
 {
-
+    // Runs on every request: the role/status/session version in SQL always win over what the cookie says.
     public static async Task Validate(CookieValidatePrincipalContext ctx)
     {
         var id = ctx.Principal?.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -617,6 +805,7 @@ static class Auth
         }
         if (s is null || s.Status != "Active" || s.Role != ctx.Principal!.FindFirstValue(ClaimTypes.Role) || s.SessionVersion.ToString() != ctx.Principal.FindFirstValue("ver"))
         {
+            ctx.HttpContext.Items["sy-reason"] = s is null ? "gone" : s.Status != "Active" ? "suspended" : s.SessionVersion.ToString() != ctx.Principal.FindFirstValue("ver") ? "replaced" : "changed";
             ctx.RejectPrincipal();
             await ctx.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         }
@@ -634,9 +823,15 @@ static class Seed
             if (await c.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM Users") > 0) return;
             var adminPw = cfg["Seed:AdminPassword"] ?? "admin123";
             var custPw = cfg["Seed:CustomerPassword"] ?? "password123";
-            await c.ExecuteAsync("INSERT INTO Users(Username,Email,PasswordHash,Role) VALUES ('admin','admin@syscle.com',@a,'Admin'),('customer1','customer@syscle.com',@b,'Customer')",
-                new { a = Pw.Hash(adminPw), b = Pw.Hash(custPw) });
-            Console.WriteLine("[Syscle] Created demo accounts: admin / admin123 and customer1 / password123. Change them before real use.");
+            if (cfg["ASPNETCORE_ENVIRONMENT"] == "Production" && adminPw == "admin123")
+            {
+                Console.WriteLine("[Syscle] Set Seed__AdminPassword to a strong password before the first start. No accounts were created.");
+                return;
+            }
+            await c.ExecuteAsync("INSERT INTO Users(Username,Email,PasswordHash,Role) VALUES ('admin','admin@syscle.com',@a,'Admin')", new { a = Pw.Hash(adminPw) });
+            if (custPw != "none")
+                await c.ExecuteAsync("INSERT INTO Users(Username,Email,PasswordHash,Role) VALUES ('customer1','customer@syscle.com',@b,'Customer')", new { b = Pw.Hash(custPw) });
+            Console.WriteLine("[Syscle] Accounts created. Change the demo passwords before real use.");
         }
         catch (Exception e)
         {

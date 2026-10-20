@@ -1,4 +1,4 @@
-
+// ADMIN: ACCOUNT MANAGEMENT. Tick one or more accounts, then use the action buttons.
 (async function () {
   const $ = id => document.getElementById(id);
   let rows = [], q = '';
@@ -8,9 +8,9 @@
     $('account-table-body').innerHTML = list.length ? list.map(a => {
       const st = a.status === 'Suspended' ? '<td class="status-suspended">Suspended</td>' : a.online ? '<td class="status-online">Online</td>' : '<td class="status-offline">Offline</td>';
       return `<tr><td class="checkbox-col"><input type="checkbox" class="account-cb" data-id="${a.id}"></td>
-        <td>${esc(a.username)} <small>(${esc(a.role)})</small></td><td>${esc(a.email)}</td><td>${esc(a.phone || '-')}</td>${st}
+        <td>${a.role === 'Admin' ? 'A' : 'C'}-${String(a.id).padStart(6, '0')}</td><td>${esc(a.username)} <small>(${esc(a.role)})</small></td><td>${esc(a.email)}</td><td>${esc(a.phone || '-')}</td>${st}
         <td class="${a.fpRequest ? 'fp-yes' : 'fp-no'}">${a.fpRequest ? 'Yes' : 'No'}</td></tr>`; }).join('')
-      : '<tr><td colspan="6" class="sy-empty">No accounts found.</td></tr>';
+      : '<tr><td colspan="7" class="sy-empty">No accounts found.</td></tr>';
   }
   const selected = () => [...document.querySelectorAll('.account-cb:checked')].map(c => rows.find(r => r.id === +c.dataset.id));
   async function each(fn, msg) {
