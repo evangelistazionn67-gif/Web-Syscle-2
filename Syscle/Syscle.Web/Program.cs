@@ -461,7 +461,7 @@ admin.MapGet("/transactions", async (string? search, string? status, string? ran
 {
     DateTime? since = range switch { "today" => DateTime.Today, "7" => DateTime.Today.AddDays(-6), "30" => DateTime.Today.AddDays(-29), _ => null };
     using var c = db.Open();
-    var rows = await c.QueryAsync(@"SELECT o.OrderId AS id, CONCAT(IF(o.Channel='Walk-in','WLK-','ORD-'), LPAD(o.OrderId,6,'0')) AS code, o.CreatedAt AS date, o.CustomerName AS customer, o.Channel AS channel,
+    var rows = await c.QueryAsync(@"SELECT o.OrderId AS id, CONCAT(IF(o.Channel='Walk-in','WLK-','ORD-'), LPAD(o.OrderId,6,'0')) AS code, o.CreatedAt AS date, o.CustomerName AS customer, o.UserId AS userId, o.Channel AS channel,
             o.PaymentMethod AS payment, o.Total AS total, o.Status AS status, o.PickupDate AS pickup,
             (SELECT GROUP_CONCAT(CONCAT(oi.ProductName, ' x', oi.Qty) SEPARATOR ', ') FROM OrderItems oi WHERE oi.OrderId = o.OrderId) AS items
         FROM Orders o
@@ -510,6 +510,7 @@ admin.MapPut("/transactions/{id:int}/status", async (int id, StatusReq r, Db db)
     var cur = await c.QueryFirstOrDefaultAsync<string>("SELECT Status FROM Orders WHERE OrderId=@id FOR UPDATE", new { id }, tx);
     if (cur is null) return Results.NotFound(new { error = "Transaction not found." });
     if (cur == "Cancelled") return Conflict("Cancelled transactions can't be changed.");
+    if (cur == "Completed") return Conflict("Completed transactions are final and can't be changed.");
     if (r.Status == "Cancelled")   // put the stock back
         await c.ExecuteAsync("UPDATE Products p JOIN OrderItems oi ON oi.ProductId = p.ProductId SET p.Stock = p.Stock + oi.Qty WHERE oi.OrderId=@id", new { id }, tx);
     await c.ExecuteAsync("UPDATE Orders SET Status=@s WHERE OrderId=@id", new { s = r.Status, id }, tx);

@@ -1,3 +1,4 @@
+// ADMIN: TRANSACTIONS HISTORY. Filter, and mark orders Completed or Cancelled (cancelling returns the stock).
 (async function () {
   const $ = id => document.getElementById(id);
   const chip = s => `<span class="sy-chip ${s === 'Completed' ? 'ok' : s === 'Cancelled' ? 'bad' : 'warn'}">${esc(s)}</span>`;
@@ -8,9 +9,9 @@
       $('val-total').textContent = d.summary.total; $('val-completed').textContent = d.summary.completed;
       $('val-pending').textContent = d.summary.pending; $('val-cancelled').textContent = d.summary.cancelled;
       $('transaction-table-body').innerHTML = d.rows.length ? d.rows.map(o => `<tr data-id="${o.id}">
-        <td>${esc(o.code)}</td><td>${fmtDateTime(o.date)}</td><td>${esc(o.customer)}</td><td style="text-align:left">${esc(o.items)}</td>
+        <td>${esc(o.code)}</td><td>${fmtDateTime(o.date)}</td><td>${esc(o.customer)}${o.userId ? '<br><small>C-' + String(o.userId).padStart(6, '0') + '</small>' : ''}</td><td style="text-align:left">${esc(o.items)}</td>
         <td>${peso(o.total)}</td><td>${esc(o.payment)}</td><td>${chip(o.status)}</td>
-        <td>${o.status === 'Pending' ? '<button class="sy-btn small" data-s="Completed">Complete</button> ' : ''}${o.status !== 'Cancelled' ? '<button class="sy-x" data-s="Cancelled">Cancel</button>' : '-'}</td></tr>`).join('')
+        <td>${o.status === 'Pending' ? '<button class="sy-btn small" data-s="Completed">Complete</button> <button class="sy-x" data-s="Cancelled">Cancel</button>' : '-'}</td></tr>`).join('')
         : '<tr><td colspan="8" class="sy-empty">No transactions found.</td></tr>';
     } catch (e) { toast(e.message, true); }
   }
