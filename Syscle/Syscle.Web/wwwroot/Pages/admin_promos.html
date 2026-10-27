@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syscle - Promo Codes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600;700;800&display=swap"><link rel="stylesheet" href="../Styles/ui.css">
+</head>
+<body data-area="admin">
+    
+    <main class="sy-page">
+        <button class="back-btn" onclick="location.href='adminhomepage.html'">&larr; Dashboard</button><h1>Promo Codes</h1>
+        <p class="sy-sub">Customers type a code in their cart to get a percentage off. Switch a code Off to stop it without deleting it.</p>
+
+        <div class="sy-card">
+            <h3>Add a promo code</h3>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                <input id="pc-code" class="sy-input" placeholder="Code, e.g. SUMMER15" maxlength="30" style="flex:1; min-width:200px; text-transform:uppercase;">
+                <input id="pc-pct" class="sy-input" type="number" min="1" max="90" value="10" style="width:110px;" aria-label="Percent off">
+                <span>% off</span>
+            </div>
+            <div class="sy-formrow" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:10px;">
+                <select id="pc-season" class="sy-input" aria-label="Season"><option value="">No season</option><option>New Year</option><option>Valentine's</option><option>Holy Week</option><option>Summer</option><option>Rainy season</option><option>Back to school</option><option>Anniversary</option><option>Payday sale</option><option>Christmas</option></select>
+                <label for="pc-start">Starts</label><input id="pc-start" class="sy-input" type="date">
+                <label for="pc-end">Ends</label><input id="pc-end" class="sy-input" type="date">
+                <input id="pc-max" class="sy-input" type="number" min="1" placeholder="Max uses (optional)" style="width:170px;">
+                <button class="sy-btn" id="pc-add" type="button">Add Code</button>
+            </div>
+            <p class="sy-sub" style="margin:8px 0 0">Leave the dates empty for a code that never expires. A season tag (Christmas, Summer...) shows customers it is a seasonal promo.</p>
+        </div>
+
+        <div class="sy-card"><h3>Frequent buyers</h3><p class="sy-sub" style="margin-bottom:8px">Your most loyal customers. Create a code for them, then message them from Customer Messages.</p><div id="top-buyers"><div class="sy-empty">Loading...</div></div></div>
+        <div class="sy-scroll"><table class="sy-table"><thead><tr><th>CODE</th><th>DISCOUNT</th><th>SEASON</th><th>VALID</th><th>USED</th><th>STATUS</th><th>ACTIONS</th></tr></thead><tbody id="promo-table-body"></tbody></table></div>
+    </main>
+    <script src="../JavaScripts/shell.js"></script><script src="../JavaScripts/api.js"></script>
+    <script src="../JavaScripts/admin_promos.js"></script>
+    <script src="../JavaScripts/support.js"></script>
+</body>
+</html>
