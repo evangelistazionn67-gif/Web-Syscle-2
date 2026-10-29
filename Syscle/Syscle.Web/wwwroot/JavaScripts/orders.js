@@ -32,11 +32,11 @@
   async function load() { try { rows = await api('/api/orders'); paint(); } catch (e) { list.innerHTML = '<div class="sy-empty">Could not load your orders.</div>'; } }
   tabs.addEventListener('click', e => { const b = e.target.closest('[data-f]'); if (!b) return; filter = b.dataset.f; tabs.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); paint(); });
   list.addEventListener('click', async e => {
-    if (e.target.dataset.pay) { try { const r = await api('/api/orders/' + e.target.dataset.pay + '/pay', 'POST'); location.href = r.checkoutUrl; } catch (err) { toast(err.message, true); } return; }
+    if (e.target.dataset.pay) { try { const r = await api('/api/orders/' + e.target.dataset.pay + '/pay', 'POST'); if (r.paid) { toast('Payment received. Thank you!'); await load(); } else location.href = r.checkoutUrl; } catch (err) { toast(err.message, true); } return; }
     const id = e.target.dataset.cancel; if (!id || !confirm('Cancel this order? The items go back to stock.')) return;
     try { await api('/api/orders/' + id + '/cancel', 'POST'); toast('Order cancelled.'); await load(); if (window.syRefreshBell) syRefreshBell(); } catch (err) { toast(err.message, true); }
   });
-  // coming back from the PayMongo page: ask the server to confirm the payment
+  // coming back from the PayMongo or PayPal page: ask the server to confirm the payment
   const qp = new URLSearchParams(location.search);
   if (qp.get('paid')) { try { const v = await api('/api/orders/' + +qp.get('paid') + '/verify-payment', 'POST'); toast(v.paid ? 'Payment received. Thank you!' : 'We are still waiting for the payment to be confirmed.', !v.paid); } catch (e) { } history.replaceState(null, '', location.pathname); }
   else if (qp.get('cancelled')) { toast('Payment was not completed. You can pay from this page.', true); history.replaceState(null, '', location.pathname); }

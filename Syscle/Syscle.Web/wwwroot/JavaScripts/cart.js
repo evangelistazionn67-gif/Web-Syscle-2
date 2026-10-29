@@ -72,7 +72,7 @@
             const m = methods.find(x => x.code === $('payment-method').value);
             cart = []; pct = 0; render(); refreshCartBadge();
             const payNote = res.payError ? '<p class="sy-red">' + esc(res.payError) + ' You can pay from My orders.</p>' : '';
-            const pay = payNote + '<p>We sent a confirmation to your email and you can follow each step in My orders.</p>' + (m && m.code === 'paymongo' ? '' : m && m.code === 'gcash' ? '<p>Thank you! The store will check your GCash payment and complete your order.</p>' : (delivery ? '<p>Pay the rider when your order arrives.</p>' : '<p>Pay at the store when you pick up.</p>'));
+            const pay = payNote + '<p>We sent a confirmation to your email and you can follow each step in My orders.</p>' + (m && (m.code === 'paymongo' || m.code === 'paypal') ? '' : m && m.code === 'gcash' ? '<p>Thank you! The store will check your GCash payment and complete your order.</p>' : (delivery ? '<p>Pay the rider when your order arrives.</p>' : '<p>Pay at the store when you pick up.</p>'));
             showModal(`<div class="sy-done"><div class="sy-check">&#10003;</div><h2>Order placed!</h2><p>Your order number</p><div class="sy-code">${esc(res.orderCode)}</div>
         <p>Total: <b>${peso(res.total)}</b></p><p>${delivery ? 'Delivery' : 'Pick-up'} date: <b>${pickText}</b></p>${pay}
         <div class="sy-pm-actions"><a class="sy-btn ghost" href="orders.html">Track my order</a><a class="sy-btn accent" href="homepage.html">Continue shopping</a></div></div>`);

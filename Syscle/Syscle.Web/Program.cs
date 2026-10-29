@@ -24,6 +24,7 @@ builder.Services.AddSingleton(new Db(cs));
 builder.Services.AddSingleton<EmailService>();
 builder.Services.AddSingleton<SmsService>();
 builder.Services.AddSingleton<PayMongoService>();
+builder.Services.AddSingleton<PayPalService>();
 // keep the data-protection keys in a folder so sign-in cookies and reset links survive a restart
 builder.Services.AddDataProtection().SetApplicationName("Syscle").PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, ".keys")));
 
@@ -381,16 +382,16 @@ shop.MapPost("/cart/bundle", async (BundleAddReq r, ClaimsPrincipal u, Db db) =>
 
 shop.MapGet("/cart/bundles", async (ClaimsPrincipal u, Db db) => { using var c = db.Open(); var (discount, applied) = await Bundles.ForCart(c, Uid(u), null); return Results.Ok(new { discount, applied }); });
 shop.MapPost("/promo", async (PromoReq r, Db db) => { using var c = db.Open(); var (pct, perr) = await Promos.Check(c, (r.Code ?? "").Trim(), null); return pct is null ? Results.NotFound(new { error = perr ?? "Invalid code." }) : Results.Ok(new { percent = pct }); });
-shop.MapGet("/payment-methods", async (Db db, PayMongoService pm) => { using var c = db.Open(); return Results.Ok(await c.QueryAsync("SELECT MethodCode AS code, Label AS label, AccountNumber AS accountNumber, AccountName AS accountName FROM PaymentMethods WHERE IsOn=1 AND (MethodCode<>'paymongo' OR @ready=1)", new { ready = pm.IsReady })); });
+shop.MapGet("/payment-methods", async (Db db, PayMongoService pm, PayPalService pp) => { using var c = db.Open(); return Results.Ok(await c.QueryAsync("SELECT MethodCode AS code, Label AS label, AccountNumber AS accountNumber, AccountName AS accountName FROM PaymentMethods WHERE IsOn=1 AND (MethodCode<>'paymongo' OR @ready=1) AND (MethodCode<>'paypal' OR @pp=1)", new { ready = pm.IsReady, pp = pp.IsReady })); });
 
-shop.MapPost("/checkout", async (CheckoutReq r, ClaimsPrincipal u, Db db, EmailService emailer, PayMongoService pm, HttpRequest req) =>
+shop.MapPost("/checkout", async (CheckoutReq r, ClaimsPrincipal u, Db db, EmailService emailer, PayMongoService pm, PayPalService pp, HttpRequest req) =>
 {
     using var c = db.Open(); using var tx = c.BeginTransaction(); var uid = Uid(u);
     var lines = (await c.QueryAsync<Line>("SELECT p.ProductId, p.Name, p.Price, ci.Qty, ci.Size, ci.Color FROM CartItems ci JOIN Products p ON p.ProductId=ci.ProductId WHERE ci.UserId=@uid", new { uid }, tx)).ToList();
     if (lines.Count == 0) return Bad("Cart empty.");
     var method = await c.QueryFirstOrDefaultAsync<string>("SELECT Label FROM PaymentMethods WHERE MethodCode=@m AND IsOn=1", new { m = r.PaymentMethod }, tx);
     if (method is null) return Bad("Invalid payment.");
-    var online = r.PaymentMethod == "paymongo"; if (online && !pm.IsReady) return Bad("Online payment is not available right now. Please choose another method.");
+    var online = r.PaymentMethod is "paymongo" or "paypal"; if (online && !(r.PaymentMethod == "paypal" ? pp.IsReady : pm.IsReady)) return Bad("Online payment is not available right now. Please choose another method.");
     // Home delivery: the customer gives an address and a phone number the rider can call. The delivery fee is set by the store.
     var delivery = r.Fulfillment == "Delivery"; string? addr = null, dphone = null; decimal fee = 0;
     if (delivery)
@@ -433,31 +434,39 @@ shop.MapPost("/checkout", async (CheckoutReq r, ClaimsPrincipal u, Db db, EmailS
     if (online)
     {
         var origin = $"{req.Scheme}://{req.Host}";
-        var (sid, url, err) = await pm.CreateSessionAsync(orderCode, orderId, total, $"{origin}/Pages/orders.html?paid={orderId}", $"{origin}/Pages/orders.html?cancelled={orderId}");
+        var (sid, url, err) = r.PaymentMethod == "paypal"
+            ? await pp.CreateOrderAsync(orderCode, total, $"{origin}/Pages/orders.html?paid={orderId}", $"{origin}/Pages/orders.html?cancelled={orderId}")
+            : await pm.CreateSessionAsync(orderCode, orderId, total, $"{origin}/Pages/orders.html?paid={orderId}", $"{origin}/Pages/orders.html?cancelled={orderId}");
         if (sid != null) { await c.ExecuteAsync("UPDATE Orders SET PaymentRef=@sid WHERE OrderId=@orderId", new { sid, orderId }); checkoutUrl = url; } else payError = err;
     }
     return Results.Ok(new { orderCode, orderId, total, deliveryFee = fee, checkoutUrl, payError });
 });
 
-// Pay later: reopens the PayMongo checkout for an unpaid online order.
-shop.MapPost("/orders/{id:int}/pay", async (int id, ClaimsPrincipal u, Db db, PayMongoService pm, HttpRequest req) =>
+// Pay later: reopens the online checkout (PayMongo or PayPal) for an unpaid order.
+shop.MapPost("/orders/{id:int}/pay", async (int id, ClaimsPrincipal u, Db db, PayMongoService pm, PayPalService pp, HttpRequest req) =>
 {
     using var c = db.Open();
-    var o = await c.QueryFirstOrDefaultAsync<OrderLock>("SELECT Status, PaymentRef, PaymentStatus, FulfillmentType FROM Orders WHERE OrderId=@id AND UserId=@uid AND PaymentMethod=(SELECT Label FROM PaymentMethods WHERE MethodCode='paymongo')", new { id, uid = Uid(u) });
+    var code = await c.ExecuteScalarAsync<string>("SELECT pm.MethodCode FROM Orders o JOIN PaymentMethods pm ON pm.Label = o.PaymentMethod WHERE o.OrderId=@id AND o.UserId=@uid AND pm.MethodCode IN ('paymongo','paypal') LIMIT 1", new { id, uid = Uid(u) });
+    var o = code is null ? null : await c.QueryFirstOrDefaultAsync<OrderLock>("SELECT Status, PaymentRef, PaymentStatus, FulfillmentType FROM Orders WHERE OrderId=@id AND UserId=@uid", new { id, uid = Uid(u) });
     if (o is null) return Results.NotFound(new { error = "Not found." }); if (o.Status != "Pending" || o.PaymentStatus == "Paid") return Conflict("This order does not need a payment.");
-    if (!pm.IsReady) return Bad("Online payment is not available right now.");
-    var total = await c.ExecuteScalarAsync<decimal>("SELECT Total FROM Orders WHERE OrderId=@id", new { id }); var code = "ORD-" + id.ToString("D6"); var origin = $"{req.Scheme}://{req.Host}";
-    var (sid, url, err) = await pm.CreateSessionAsync(code, id, total, $"{origin}/Pages/orders.html?paid={id}", $"{origin}/Pages/orders.html?cancelled={id}");
+    var paypal = code == "paypal"; if (!(paypal ? pp.IsReady : pm.IsReady)) return Bad("Online payment is not available right now.");
+    // a PayPal order the customer already approved but never finished is captured now, so nobody pays twice
+    if (paypal && o.PaymentRef != null && o.PaymentRef.StartsWith("pp_") && await pp.IsPaidAsync(o.PaymentRef[3..])) { await c.ExecuteAsync("UPDATE Orders SET PaymentStatus='Paid', PaidAt=NOW() WHERE OrderId=@id", new { id }); return Results.Ok(new { paid = true }); }
+    var total = await c.ExecuteScalarAsync<decimal>("SELECT Total FROM Orders WHERE OrderId=@id", new { id }); var oc = "ORD-" + id.ToString("D6"); var origin = $"{req.Scheme}://{req.Host}";
+    var (sid, url, err) = paypal ? await pp.CreateOrderAsync(oc, total, $"{origin}/Pages/orders.html?paid={id}", $"{origin}/Pages/orders.html?cancelled={id}")
+                                 : await pm.CreateSessionAsync(oc, id, total, $"{origin}/Pages/orders.html?paid={id}", $"{origin}/Pages/orders.html?cancelled={id}");
     if (sid is null) return Bad(err ?? "Could not open the payment page.");
     await c.ExecuteAsync("UPDATE Orders SET PaymentRef=@sid WHERE OrderId=@id", new { sid, id }); return Results.Ok(new { checkoutUrl = url });
 });
 // Called when the customer comes back from PayMongo: asks PayMongo directly if the payment went through (works even if the webhook is not set up).
-shop.MapPost("/orders/{id:int}/verify-payment", async (int id, ClaimsPrincipal u, Db db, PayMongoService pm) =>
+shop.MapPost("/orders/{id:int}/verify-payment", async (int id, ClaimsPrincipal u, Db db, PayMongoService pm, PayPalService pp) =>
 {
     using var c = db.Open();
     var o = await c.QueryFirstOrDefaultAsync<OrderLock>("SELECT Status, PaymentRef, PaymentStatus, FulfillmentType FROM Orders WHERE OrderId=@id AND UserId=@uid", new { id, uid = Uid(u) });
     if (o is null) return Results.NotFound(new { error = "Not found." });
     if (o.PaymentStatus == "Paid") return Results.Ok(new { paid = true });
+    // PayPal: the customer comes back approved, and this call captures the money (PayPal only takes it at this step)
+    if (o.PaymentRef != null && o.PaymentRef.StartsWith("pp_") && await pp.IsPaidAsync(o.PaymentRef[3..])) { await c.ExecuteAsync("UPDATE Orders SET PaymentStatus='Paid', PaidAt=NOW() WHERE OrderId=@id", new { id }); return Results.Ok(new { paid = true }); }
     if (o.PaymentRef != null && o.PaymentRef.StartsWith("cs_") && await pm.IsPaidAsync(o.PaymentRef)) { await c.ExecuteAsync("UPDATE Orders SET PaymentStatus='Paid', PaidAt=NOW() WHERE OrderId=@id", new { id }); return Results.Ok(new { paid = true }); }
     return Results.Ok(new { paid = false });
 });
@@ -778,7 +787,7 @@ admin.MapPut("/transactions/{id:int}/status", async (int id, StatusReq r, Db db,
     if (cur is null) return Results.NotFound(); if (cur == "Cancelled" || cur == "Completed") return Conflict("This order is already finished.");
     if (r.Status != "Cancelled" && Rank(r.Status) <= Rank(cur)) return Conflict("The order is already at or past that step.");
     if (r.Status == "Out for Delivery" && ol!.FulfillmentType != "Delivery") return Conflict("This is a pick-up order. Mark it Ready instead.");
-    if (r.Status == "Completed" && ol!.PaymentRef != null && ol.PaymentRef.StartsWith("cs_") && ol.PaymentStatus != "Paid") return Conflict("The online payment was not received yet. Wait for PayMongo to confirm it.");
+    if (r.Status == "Completed" && ol!.PaymentRef != null && (ol.PaymentRef.StartsWith("cs_") || ol.PaymentRef.StartsWith("pp_")) && ol.PaymentStatus != "Paid") return Conflict("The online payment was not received yet. Wait for it to be confirmed.");
     if (r.Status == "Cancelled") await StockLog.ReturnOrder(c, tx, id, u.Identity?.Name);
     var courier = Nz(r.Courier); var trackNo = Nz(r.TrackingNo); if (courier != null && courier.Length > 60) courier = courier[..60]; if (trackNo != null && trackNo.Length > 60) trackNo = trackNo[..60];
     await c.ExecuteAsync("UPDATE Orders SET Status=@s, Courier=IFNULL(@courier,Courier), TrackingNo=IFNULL(@trackNo,TrackingNo), PaymentStatus=IF(@s='Completed','Paid',PaymentStatus), PaidAt=IF(@s='Completed',IFNULL(PaidAt,NOW()),PaidAt) WHERE OrderId=@id", new { s = r.Status, id, courier, trackNo }, tx);
@@ -1207,6 +1216,67 @@ public class PayMongoService
     }
 }
 
+// PayPal Checkout (Orders v2). Sandbox keys work for testing; set PayPal:Mode to "live" with live keys for real money.
+public class PayPalService
+{
+    private readonly IConfiguration _config;
+    public PayPalService(IConfiguration config) { _config = config; }
+    string ClientId => _config["PayPal:ClientId"] ?? "";
+    string Secret => _config["PayPal:Secret"] ?? "";
+    string Currency => string.IsNullOrWhiteSpace(_config["PayPal:Currency"]) ? "PHP" : _config["PayPal:Currency"]!;
+    string Base => string.Equals(_config["PayPal:Mode"], "live", StringComparison.OrdinalIgnoreCase) ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
+    public bool IsReady => ClientId.Length > 10 && Secret.Length > 10 && !ClientId.Contains("PASTE") && !Secret.Contains("PASTE");
+    async Task<HttpClient?> ClientAsync()
+    {
+        var http = new HttpClient { Timeout = TimeSpan.FromSeconds(25) };
+        using var req = new HttpRequestMessage(HttpMethod.Post, Base + "/v1/oauth2/token") { Content = new FormUrlEncodedContent(new[] { new KeyValuePair<string, string>("grant_type", "client_credentials") }) };
+        req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.UTF8.GetBytes(ClientId + ":" + Secret)));
+        var res = await http.SendAsync(req); var text = await res.Content.ReadAsStringAsync();
+        if (!res.IsSuccessStatusCode) { Console.WriteLine("[Syscle] PayPal login answered " + (int)res.StatusCode + ": " + (text.Length > 200 ? text[..200] : text)); return null; }
+        using var doc = JsonDocument.Parse(text); http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", doc.RootElement.GetProperty("access_token").GetString());
+        return http;
+    }
+    // Creates a PayPal order and returns the page where the customer logs in to PayPal and approves the payment. The id is stored as "pp_" + PayPal order id.
+    public async Task<(string? id, string? url, string? err)> CreateOrderAsync(string orderCode, decimal total, string returnUrl, string cancelUrl)
+    {
+        const string fail = "The PayPal page could not be opened. Try again or choose another method.";
+        if (!IsReady) return (null, null, "PayPal is not set up.");
+        try
+        {
+            using var http = await ClientAsync(); if (http is null) return (null, null, fail);
+            var body = new { intent = "CAPTURE", purchase_units = new[] { new { reference_id = orderCode, description = "Web-Syscle order " + orderCode, amount = new { currency_code = Currency, value = total.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) } } },
+                payment_source = new { paypal = new { experience_context = new { brand_name = "Web-Syscle", user_action = "PAY_NOW", shipping_preference = "NO_SHIPPING", return_url = returnUrl, cancel_url = cancelUrl } } } };
+            http.DefaultRequestHeaders.Add("PayPal-Request-Id", orderCode + "-" + Guid.NewGuid().ToString("N")[..8]);
+            var res = await http.PostAsJsonAsync(Base + "/v2/checkout/orders", body); var text = await res.Content.ReadAsStringAsync();
+            if (!res.IsSuccessStatusCode) { Console.WriteLine("[Syscle] PayPal answered " + (int)res.StatusCode + ": " + (text.Length > 300 ? text[..300] : text)); return (null, null, fail); }
+            using var doc = JsonDocument.Parse(text); var id = doc.RootElement.GetProperty("id").GetString(); string? url = null;
+            foreach (var l in doc.RootElement.GetProperty("links").EnumerateArray()) { var rel = l.GetProperty("rel").GetString(); if (rel is "payer-action" or "approve") { url = l.GetProperty("href").GetString(); break; } }
+            return url is null ? (null, null, fail) : ("pp_" + id, url, null);
+        }
+        catch (Exception ex) { Console.WriteLine("[Syscle] PayPal error: " + ex.Message); return (null, null, fail); }
+    }
+    // True when the order is paid. If the customer approved it but the money was not taken yet, it is captured here.
+    public async Task<bool> IsPaidAsync(string paypalOrderId)
+    {
+        if (!IsReady || string.IsNullOrWhiteSpace(paypalOrderId)) return false;
+        try
+        {
+            using var http = await ClientAsync(); if (http is null) return false;
+            var text = await http.GetStringAsync(Base + "/v2/checkout/orders/" + Uri.EscapeDataString(paypalOrderId));
+            using var doc = JsonDocument.Parse(text); var status = doc.RootElement.GetProperty("status").GetString();
+            if (status == "COMPLETED") return true;
+            if (status != "APPROVED") return false;
+            var cap = new HttpRequestMessage(HttpMethod.Post, Base + "/v2/checkout/orders/" + Uri.EscapeDataString(paypalOrderId) + "/capture") { Content = new StringContent("{}", Encoding.UTF8, "application/json") };
+            var res = await http.SendAsync(cap); var ct = await res.Content.ReadAsStringAsync();
+            if (res.IsSuccessStatusCode) { using var d2 = JsonDocument.Parse(ct); return d2.RootElement.GetProperty("status").GetString() == "COMPLETED"; }
+            if (ct.Contains("ORDER_ALREADY_CAPTURED")) return true;
+            Console.WriteLine("[Syscle] PayPal capture answered " + (int)res.StatusCode + ": " + (ct.Length > 300 ? ct[..300] : ct));
+        }
+        catch (Exception ex) { Console.WriteLine("[Syscle] PayPal check failed: " + ex.Message); }
+        return false;
+    }
+}
+
 public class SmsService
 {
     private readonly IConfiguration _config;
@@ -1322,6 +1392,7 @@ static class Seed
         await AddColumn(c, "Orders", "PaidAt", "DATETIME NULL");
         await c.ExecuteAsync("UPDATE Orders SET PaymentStatus='Paid', PaidAt=IFNULL(PaidAt,CreatedAt) WHERE Status='Completed' AND PaymentStatus='Unpaid'");
         await c.ExecuteAsync("INSERT IGNORE INTO PaymentMethods(MethodCode,Label,IsOn) VALUES('paymongo','GCash / Maya / Card (online)',1)");
+        await c.ExecuteAsync("INSERT IGNORE INTO PaymentMethods(MethodCode,Label,IsOn) VALUES('paypal','PayPal (online)',1)");
         await AddColumn(c, "Users", "EmailNotify", "TINYINT(1) NOT NULL DEFAULT 1");
         await AddColumn(c, "PromoCodes", "StartsAt", "DATE NULL"); await AddColumn(c, "PromoCodes", "EndsAt", "DATE NULL");
         await AddColumn(c, "PromoCodes", "MaxUses", "INT NULL"); await AddColumn(c, "PromoCodes", "Season", "VARCHAR(30) NULL");
