@@ -96,3 +96,5 @@ document.querySelectorAll('input[type="password"]').forEach(inp => {
     b.addEventListener('click', () => { const show = inp.type === 'password'; inp.type = show ? 'text' : 'password'; b.innerHTML = show ? EYE_OFF : EYE; b.setAttribute('aria-label', show ? 'Hide password' : 'Show password'); });
     wrap.appendChild(b);
 });
+// shown when the admin portal signed itself out because nobody was working
+if (params.get('reason') === 'idle') setTimeout(() => notify('You were signed out because the admin portal was idle. Please log in again.', false), 300);

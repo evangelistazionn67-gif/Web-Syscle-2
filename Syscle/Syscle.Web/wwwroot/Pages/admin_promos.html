@@ -9,7 +9,7 @@
 <body data-area="admin">
     
     <main class="sy-page">
-        <button class="back-btn" onclick="location.href='adminhomepage.html'">&larr; Dashboard</button><h1>Promo Codes</h1>
+        <button class="back-btn" onclick="location.href='adminhomepage.html'"><i class="bi bi-arrow-left" aria-hidden="true"></i> Dashboard</button><h1>Promo Codes</h1>
         <p class="sy-sub">Customers type a code in their cart to get a percentage off. Switch a code Off to stop it without deleting it.</p>
 
         <div class="sy-card">
@@ -20,13 +20,17 @@
                 <span>% off</span>
             </div>
             <div class="sy-formrow" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:10px;">
-                <select id="pc-season" class="sy-input" aria-label="Season"><option value="">No season</option><option>New Year</option><option>Valentine's</option><option>Holy Week</option><option>Summer</option><option>Rainy season</option><option>Back to school</option><option>Anniversary</option><option>Payday sale</option><option>Christmas</option></select>
+                <select id="pc-season" class="sy-input" aria-label="Season"><option value="">No season</option></select>
                 <label for="pc-start">Starts</label><input id="pc-start" class="sy-input" type="date">
                 <label for="pc-end">Ends</label><input id="pc-end" class="sy-input" type="date">
-                <input id="pc-max" class="sy-input" type="number" min="1" placeholder="Max uses (optional)" style="width:170px;">
+                <fieldset class="sy-limit" aria-label="How many times can it be used"><legend>Usage</legend>
+                  <label class="sy-check-line"><input type="radio" name="pc-limit" value="unlimited" checked> Unlimited</label>
+                  <label class="sy-check-line"><input type="radio" name="pc-limit" value="limited"> Limited</label>
+                  <input id="pc-max" class="sy-input" type="number" min="1" max="100000" placeholder="How many times?" style="width:150px" hidden></fieldset>
+                <label class="sy-check-line"><input type="checkbox" id="pc-public"> Show in the customer pop-up</label>
                 <button class="sy-btn" id="pc-add" type="button">Add Code</button>
             </div>
-            <p class="sy-sub" style="margin:8px 0 0">Leave the dates empty for a code that never expires. A season tag (Christmas, Summer...) shows customers it is a seasonal promo.</p>
+            <p class="sy-sub" style="margin:8px 0 0">Choose Unlimited or Limited first; a Limited code asks for the number of uses. Leave the dates empty for a code with no end date. A seasonal code only works while its season is live (seasons and their dates are set in Lists and rules).</p>
         </div>
 
         <div class="sy-card"><h3>Frequent buyers</h3><p class="sy-sub" style="margin-bottom:8px">Your most loyal customers. Create a code for them, then message them from Customer Messages.</p><div id="top-buyers"><div class="sy-empty">Loading...</div></div></div>

@@ -2,7 +2,7 @@
 (async function () {
   const $ = id => document.getElementById(id), body = $('rp-body');
   let period = 'daily', data = null;
-  const pct = (c, p) => { c = +c; p = +p; if (!p) return c ? '<span class="sy-up">new</span>' : '<span class="sy-muted">-</span>'; const v = Math.round((c - p) / p * 100); return `<span class="${v >= 0 ? 'sy-up' : 'sy-down'}">${v >= 0 ? '&#9650;' : '&#9660;'} ${Math.abs(v)}%</span>`; };
+  const pct = (c, p) => { c = +c; p = +p; if (!p) return c ? '<span class="sy-up">new</span>' : '<span class="sy-muted">-</span>'; const v = Math.round((c - p) / p * 100); return `<span class="${v >= 0 ? 'sy-up' : 'sy-down'}">${v >= 0 ? '<i class="bi bi-caret-up-fill" aria-hidden="true"></i>' : '<i class="bi bi-caret-down-fill" aria-hidden="true"></i>'} ${Math.abs(v)}%</span>`; };
   const hbars = (rows, label, val, fmt) => { const m = Math.max(1, ...rows.map(r => +r[val])); return rows.length ? rows.map(r => `<div class="sy-hbar"><span title="${esc(r[label])}">${esc(r[label])}</span><div class="tr"><i style="width:${+r[val] / m * 100}%"></i></div><b>${fmt(r[val])}</b></div>`).join('') : '<div class="sy-empty">No data.</div>'; };
   const wkStart = l => { const [y, w] = l.split('-W').map(Number); const d = new Date(y, 0, 4); d.setDate(d.getDate() - ((d.getDay() + 6) % 7) + (w - 1) * 7); return d; };
   const fmtLabel = l => period === 'weekly' ? 'Week of ' + wkStart(l).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : period === 'daily' ? new Date(l + 'T00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : period === 'monthly' ? new Date(l + '-01T00:00').toLocaleDateString(undefined, { month: 'short', year: '2-digit' }) : l;
@@ -28,7 +28,7 @@
         <div class="sy-card sy-c4"><h3>Top buyers</h3>${d.buyers.length ? d.buyers.map((b, i) => `<div class="sy-rank"><span class="n">${i + 1}</span><div class="sy-grow"><b>${esc(b.username)}</b><small>${b.orders} order${b.orders > 1 ? 's' : ''}</small></div><b>${peso(b.spent)}</b></div>`).join('') : '<div class="sy-empty">No buyers.</div>'}</div>
         <div class="sy-card sy-c4"><h3>By status</h3>${hbars(d.byStatus, 'status', 'count', v => v)}</div>
         <div class="sy-card sy-c4"><h3>By payment method</h3>${hbars(d.byPayment, 'method', 'total', peso)}</div>
-        <div class="sy-card sy-c4"><h3>Online vs walk-in</h3>${hbars(d.byChannel, 'channel', 'total', peso)}<h3 style="margin-top:16px">Promo codes used</h3>${d.promos.length ? d.promos.map(r => `<div class="sy-row"><span><b>${esc(r.code)}</b> &times; ${r.uses}</span><span>-${peso(r.given)}</span></div>`).join('') : '<div class="sy-empty">No promo codes used.</div>'}</div>
+        <div class="sy-card sy-c4"><h3>Online vs walk-in</h3>${hbars(d.byChannel, 'channel', 'total', peso)}<h3 style="margin-top:16px">Promo codes used</h3>${d.promos.length ? d.promos.map(r => `<div class="sy-row"><span><b>${esc(r.code)}</b> x ${r.uses}</span><span>-${peso(r.given)}</span></div>`).join('') : '<div class="sy-empty">No promo codes used.</div>'}</div>
       </div>`;
   }
   async function load() {

@@ -8,9 +8,9 @@
 <body data-area="admin">
   
 <main class="sy-page">
-    <button class="back-btn" onclick="location.href='adminhomepage.html'">&larr; Dashboard</button><h1>Walk-in Transaction</h1>
+    <h1>Walk-in sale</h1><p class="sy-sub">Scan the QR label on each item, check the items, then confirm the money. The sale is recorded only after both checks.</p>
     <div class="sy-pos">
-      <div class="sy-card"><h3>Items</h3>
+      <div class="sy-card"><div class="sy-toolbar" style="margin:0 0 10px"><h3>Items</h3><button class="sy-btn small" id="btn-scan-item" type="button"><i class="bi bi-qr-code-scan" aria-hidden="true"></i> Scan item</button></div>
         <div class="pos-search-wrapper"><input type="text" id="pos-item-search" class="sy-input" placeholder="Search an item to add..." autocomplete="off">
           <div class="pos-dropdown-list" id="pos-search-results"></div></div>
         <div id="transaction-items-container" class="sy-items"></div></div>
@@ -20,10 +20,10 @@
         <p class="cost-breakdown-title">Cost Breakdown</p><div id="cost-breakdown-container" class="sy-breakdown"></div>
         <div class="total-cost-row"><strong id="pos-total">Total Due: 0</strong></div>
         <p class="order-number-text" id="order-number-text">TRANS-ID: (Generated after saving)</p>
-        <button class="sy-btn" id="btn-generate" type="button">GENERATE TRANSACTION</button></div>
+        <button class="sy-btn" id="btn-generate" type="button">Review and record sale</button></div>
     </div>
   </main>
-  <script src="../JavaScripts/shell.js"></script><script src="../JavaScripts/api.js"></script><script src="../JavaScripts/admin_transaction.js"></script>
+  <script src="../JavaScripts/shell.js"></script><script src="../JavaScripts/api.js"></script><script src="../JavaScripts/scan.js"></script><script src="../JavaScripts/admin_transaction.js"></script>
     <script src="../JavaScripts/support.js"></script>
 </body>
 </html>

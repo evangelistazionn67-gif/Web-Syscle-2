@@ -18,7 +18,7 @@
             sub += l.price * l.qty;
             const colorStr = l.color ? `<span style="background:#eee;color:#000;padding:2px 5px;border-radius:3px;font-size:12px;margin-left:5px;">${esc(l.color)}</span>` : '';
             box.insertAdjacentHTML('beforeend', `<div class="cart-product-card sy-line" data-id="${l.productId}" data-size="${esc(l.size || '')}" data-color="${esc(l.color || '')}">
-        ${l.image ? `<img class="sy-thumb" src="${esc(l.image)}" alt="">` : ''}<div class="sy-grow"><b>${esc(l.name)}${l.size ? ' <span class="sy-sizetag">' + esc(l.size) + '</span>' : ''}${colorStr}</b><small>${esc(l.itemType)} · ${peso(l.price)} each · ${l.stock} in stock</small></div>
+        ${l.image ? `<img class="sy-thumb" src="${esc(l.image)}" alt="">` : ''}<div class="sy-grow"><b>${esc(l.name)}${l.size ? ' <span class="sy-sizetag">' + esc(l.size) + '</span>' : ''}${colorStr}</b><small>${esc(l.itemType)} &middot; ${peso(l.price)} each &middot; ${l.stock} in stock</small></div>
         <div class="sy-qty"><button data-d="-1">-</button><span>${l.qty}</span><button data-d="1">+</button></div>
         <b>${peso(l.price * l.qty)}</b><button class="sy-x" data-rm="1">Remove</button></div>`);
             bd.insertAdjacentHTML('beforeend', `<div class="sy-row"><span>${esc(l.name)}${l.size ? ' [' + esc(l.size) + ']' : ''}${l.color ? ' (' + esc(l.color) + ')' : ''} (${peso(l.price)})</span><span>x ${l.qty}</span></div>`);
@@ -43,13 +43,24 @@
         else if (e.target.dataset.d && line) setQty(id, size, color, line.qty + (+e.target.dataset.d));
     });
 
-    $('promo-apply').addEventListener('click', async () => {
+    async function applyPromo(quiet) {
         const code = $('promo-code').value.trim();
         if (!code) { pct = 0; render(); return; }
-        try { pct = (await api('/api/promo', 'POST', { code })).percent; toast(`Promo applied: ${pct}% off.`); }
-        catch (e) { pct = 0; toast(e.message, true); }
+        try { pct = (await api('/api/promo', 'POST', { code })).percent; if (!quiet) toast(`Promo applied: ${pct}% off.`); }
+        catch (e) { pct = 0; toast(e.message, true); if (quiet) { try { localStorage.removeItem('sy.claim'); } catch (x) { } } }
         render();
-    });
+    }
+    $('promo-apply').addEventListener('click', () => applyPromo(false));
+    $('promo-code').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); applyPromo(false); } });
+    // codes the store is giving out right now (the same ones the pop-up shows), and a code the customer already claimed
+    try {
+        const d = await fetch('/api/promotions').then(r => r.json()), box = $('promo-offers');
+        if (d.codes && d.codes.length) {
+            box.hidden = false; box.innerHTML = '<span>Codes you can use:</span> ' + d.codes.map(c => `<button type="button" class="sy-chip accent" data-code="${esc(c.code)}">${esc(c.code)} &middot; ${c.percent}% off</button>`).join(' ');
+            box.addEventListener('click', e => { const b = e.target.closest('[data-code]'); if (b) { $('promo-code').value = b.dataset.code; applyPromo(false); } });
+        }
+    } catch (e) { }
+    try { const cl = JSON.parse(localStorage.getItem('sy.claim') || 'null'); if (cl && cl.code) { $('promo-code').value = cl.code; applyPromo(true); } } catch (e) { }
 
     // pick-up or home delivery
     try { const si = await api('/api/store-info'); if (si.DeliveryFee !== undefined && si.DeliveryFee !== '' && !isNaN(+si.DeliveryFee)) fee = +si.DeliveryFee; } catch (e) { }
@@ -68,12 +79,13 @@
             const res = await api('/api/checkout', 'POST', { pickupDate: pick.value, promoCode: $('promo-code').value.trim() || null, paymentMethod: $('payment-method').value, paymentRef: isG ? ref : null, fulfillment: delivery ? 'Delivery' : 'Pickup', address: delivery ? $('del-address').value : null, phone: delivery ? $('del-phone').value : null });
             if (res.checkoutUrl) { toast('Opening the secure payment page...'); location.href = res.checkoutUrl; return; }
             $('gc-ref').value = '';
+            try { if (($('promo-code').value || '').trim().toUpperCase() === (JSON.parse(localStorage.getItem('sy.claim') || '{}').code || '')) localStorage.removeItem('sy.claim'); } catch (x) { }
             $('order-number').textContent = 'ORDER NUMBER: ' + res.orderCode;
             const m = methods.find(x => x.code === $('payment-method').value);
             cart = []; pct = 0; render(); refreshCartBadge();
             const payNote = res.payError ? '<p class="sy-red">' + esc(res.payError) + ' You can pay from My orders.</p>' : '';
-            const pay = payNote + '<p>We sent a confirmation to your email and you can follow each step in My orders.</p>' + (m && (m.code === 'paymongo' || m.code === 'paypal') ? '' : m && m.code === 'gcash' ? '<p>Thank you! The store will check your GCash payment and complete your order.</p>' : (delivery ? '<p>Pay the rider when your order arrives.</p>' : '<p>Pay at the store when you pick up.</p>'));
-            showModal(`<div class="sy-done"><div class="sy-check">&#10003;</div><h2>Order placed!</h2><p>Your order number</p><div class="sy-code">${esc(res.orderCode)}</div>
+            const pay = payNote + '<p>We sent a confirmation to your email and you can follow each step in My orders. The store checks your items first, then confirms your payment.</p>' + (m && (m.code === 'paymongo' || m.code === 'paypal') ? '' : m && m.code === 'gcash' ? '<p>Thank you! The store will check your items and your GCash payment, then prepare your order.</p>' : (delivery ? '<p>Pay the rider when your order arrives.</p>' : '<p>Pay at the store when you pick up.</p>'));
+            showModal(`<div class="sy-done"><div class="sy-check"><i class="bi bi-check-lg" aria-hidden="true"></i></div><h2>Order placed!</h2><p>Your order number</p><div class="sy-code">${esc(res.orderCode)}</div>
         <p>Total: <b>${peso(res.total)}</b></p><p>${delivery ? 'Delivery' : 'Pick-up'} date: <b>${pickText}</b></p>${pay}
         <div class="sy-pm-actions"><a class="sy-btn ghost" href="orders.html">Track my order</a><a class="sy-btn accent" href="homepage.html">Continue shopping</a></div></div>`);
         } catch (e) { toast(e.message, true); await load(); }
@@ -81,7 +93,17 @@
 
     try {
         methods = await api('/api/payment-methods');
-        $('payment-method').innerHTML = methods.map(m => `<option value="${esc(m.code)}">${esc(m.label)}</option>`).join('') || '<option value="">No payment method</option>';
+        // every payment method the store switched on is listed. One that is not set up yet is shown but cannot be picked (test mode makes online ones usable with a practice payment page)
+        const usable = m => m.ready || m.test;
+        $('payment-method').innerHTML = methods.map(m => `<option value="${esc(m.code)}"${usable(m) ? '' : ' disabled'}>${esc(m.label)}</option>`).join('') || '<option value="">No payment method</option>';
+        const first = methods.find(usable); if (first) $('payment-method').value = first.code;
+        const HINT = { cash: 'Pay at pick-up or to the rider.', gcash: 'Send to the store\'s GCash, then type the reference number.', paymongo: 'GCash, Maya or card on a secure page.', paypal: 'Pay with your PayPal account.' };
+        const ICON = { cash: 'cash-stack', gcash: 'phone', paymongo: 'credit-card-2-front', paypal: 'paypal' };
+        const paintList = () => {
+            $('pay-list').innerHTML = methods.map(m => `<label class="sy-payopt${$('payment-method').value === m.code ? ' on' : ''}${usable(m) ? '' : ' off'}"><input type="radio" name="paypick" value="${esc(m.code)}"${$('payment-method').value === m.code ? ' checked' : ''}${usable(m) ? '' : ' disabled'}>
+                <i class="bi bi-${ICON[m.code] || 'wallet2'}" aria-hidden="true"></i><span><b>${esc(m.label)}</b><small>${esc(HINT[m.code] || '')}</small></span>${!m.ready ? (m.test ? '<em class="sy-chip warn">Test mode</em>' : '<em class="sy-chip mute">Not set up yet</em>') : ''}</label>`).join('');
+        };
+        $('pay-list').addEventListener('change', e => { if (e.target.name === 'paypick') { $('payment-method').value = e.target.value; $('payment-method').dispatchEvent(new Event('change')); paintList(); } });
         // GCash box: shows the store's number (and QR when the admin turned it on) and asks for the reference number
         let qr = { show: false, image: '' }; try { qr = await api('/api/settings/payment-qr'); } catch (e) { }
         const paintPay = () => {
@@ -91,8 +113,8 @@
             $('gc-number').textContent = m.accountNumber || '(ask the store)'; $('gc-name').textContent = m.accountName ? '(' + m.accountName + ')' : '';
             $('gc-qr').hidden = !(qr.show && qr.image); if (qr.image) $('gc-qr').src = qr.image;
         };
-        $('payment-method').addEventListener('change', paintPay); paintPay();
-        try { const pref = localStorage.getItem('syscle.pay'); if (pref && methods.some(x => x.code === pref)) { $('payment-method').value = pref; paintPay(); } } catch (e) { }
+        $('payment-method').addEventListener('change', paintPay); paintList(); paintPay();
+        try { const pref = localStorage.getItem('syscle.pay'); if (pref && methods.some(x => x.code === pref && usable(x))) { $('payment-method').value = pref; paintList(); paintPay(); } } catch (e) { }
         await load();
     } catch (e) { location.href = '/Pages/error.html'; }
     initHeader(null);

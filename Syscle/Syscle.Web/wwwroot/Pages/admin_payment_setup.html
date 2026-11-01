@@ -9,11 +9,20 @@
 <body data-area="admin">
     
     <main class="sy-page">
-        <button class="back-btn" onclick="location.href='adminhomepage.html'">&larr; Dashboard</button><h1>Payment Setup</h1>
+        <button class="back-btn" onclick="location.href='adminhomepage.html'"><i class="bi bi-arrow-left" aria-hidden="true"></i> Dashboard</button><h1>Payment Setup</h1>
         <div class="sy-card"><div class="sy-switch"><span>Cash (pay at pick-up)</span><button class="toggle-btn" data-code="cash" type="button">ON</button></div></div>
         <div class="sy-card">
             <div class="sy-switch"><span>GCash</span><button class="toggle-btn" data-code="gcash" type="button">ON</button></div>
             <p class="sy-sub">Customers see this number at checkout, pay to it in their GCash app, and type the reference number from their receipt. You will see that reference on the order in Transactions History &ndash; check it in your GCash app before you press Complete.</p><label>GCash number</label><input class="sy-input" id="gcash-number" maxlength="60"><label>Account name</label><input class="sy-input" id="gcash-name" maxlength="80">
+        </div>
+
+        <div class="sy-card">
+            <div class="sy-switch"><span>GCash / Maya / Card (PayMongo)</span><button class="toggle-btn" data-code="paymongo" type="button">ON</button></div>
+            <p class="sy-sub" id="st-paymongo">Checking...</p>
+        </div>
+        <div class="sy-card">
+            <div class="sy-switch"><span>PayPal</span><button class="toggle-btn" data-code="paypal" type="button">ON</button></div>
+            <p class="sy-sub" id="st-paypal">Checking...</p>
         </div>
 
         <div class="sy-card">

@@ -30,7 +30,10 @@
     const pics = b.items.flatMap(i => Array.from({ length: i.qty }, () => i));
     return `<article class="sy-bcard"><div class="sy-bsave">${bogo ? 'Buy 1 Get 1' : 'Save ' + b.discountPercent + '%'}${b.kind === 'Package' ? ' &middot; Bike package' : ''}${b.season ? ' &middot; ' + esc(b.season) : ''}</div>
       <div class="sy-bimgs">${pics.map(i => `<div class="sy-bimg">${i.image ? `<img src="${esc(i.image)}" alt="${esc(i.name)}" loading="lazy">` : ''}</div>`).join('<span class="sy-bplus">+</span>')}</div>
-      <div class="sy-bnames">${b.items.map(i => esc(i.name) + (i.qty > 1 ? ' &times; ' + i.qty : '')).join('<br>')}</div>
+      ${b.image ? `<img class="sy-bcover" src="${esc(b.image)}" alt="${esc(b.name)}" loading="lazy">` : ''}
+      ${b.description ? `<p class="sy-bdesc">${esc(b.description)}</p>` : ''}
+      <div class="sy-bnames">${b.items.map(i => esc(i.name) + (i.qty > 1 ? ' x ' + i.qty : '')).join('<br>')}</div>
+      <details class="sy-bdet"><summary>Details and what it fits</summary>${b.items.map(i => `<div class="sy-bdi"><b>${esc(i.name)}</b>${i.description ? `<p>${esc(i.description)}</p>` : ''}${i.specs ? specTable(i.specs) : ''}${i.fitTags ? `<p class="sy-muted">Fits: ${esc(i.fitTags)}</p>` : ''}</div>`).join('')}</details>
       <div class="sy-bprice"><s>${peso(b.listPrice)}</s> <b>${peso(b.price)}</b><small>You save ${peso(b.saving)}</small></div>
       <button class="sy-btn accent" data-addbundle="${b.id}">Add bundle to cart</button></article>`;
   }

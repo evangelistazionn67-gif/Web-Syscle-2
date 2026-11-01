@@ -9,7 +9,7 @@
 <body data-area="admin">
     
     <main class="sy-page">
-        <button class="back-btn" onclick="location.href='adminhomepage.html'">&larr; Dashboard</button><h1>Bundle Offers</h1>
+        <button class="back-btn" onclick="location.href='adminhomepage.html'"><i class="bi bi-arrow-left" aria-hidden="true"></i> Dashboard</button><h1>Bundle Offers</h1>
         <p class="sy-sub" id="bundle-note"></p>
 
         <div class="sy-card">
@@ -26,7 +26,9 @@
 
             <div class="sy-formrow" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
                 <select id="nb-kind" class="sy-input" aria-label="Type"><option value="Bundle">Bundle (parts)</option><option value="Package">Complete bike package</option></select>
-                <select id="nb-season" class="sy-input" aria-label="Season"><option value="">No season</option><option>New Year</option><option>Valentine's</option><option>Holy Week</option><option>Summer</option><option>Rainy season</option><option>Back to school</option><option>Anniversary</option><option>Payday sale</option><option>Christmas</option></select>
+                <input id="nb-desc" class="sy-input" maxlength="500" placeholder="Describe the bundle (what it is for, who it suits)" aria-label="Bundle description" style="flex:1;min-width:240px">
+                <label for="nb-image" class="sy-sublink" style="margin:0">Picture (optional)</label><input id="nb-image" class="sy-input" type="file" accept="image/*" style="max-width:260px">
+                <select id="nb-season" class="sy-input" aria-label="Season"><option value="">No season</option></select>
                 <label for="nb-start">Starts</label><input id="nb-start" class="sy-input" type="date"><label for="nb-end">Ends</label><input id="nb-end" class="sy-input" type="date">
             </div>
             <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">

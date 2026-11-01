@@ -10,8 +10,8 @@
     
     <main class="sy-page">
         <div class="sy-toolbar"><div><h1>Orders &amp; transactions</h1><p class="sy-sub" style="margin:0">Move each order through its steps. Customers are notified (and emailed) at every step.</p></div>
-        <button class="sy-btn ghost small" id="btn-export" type="button">Export CSV</button></div>
-        <div class="sy-cards"><div class="sy-stat">Total<b id="val-total">0</b></div><div class="sy-stat">Pending<b id="val-pending">0</b></div><div class="sy-stat">Preparing<b id="val-preparing">0</b></div><div class="sy-stat">Ready<b id="val-ready">0</b></div><div class="sy-stat">Completed<b id="val-completed">0</b></div><div class="sy-stat">Cancelled<b id="val-cancelled">0</b></div></div>
+        <div class="sy-pactions"><button class="sy-btn small" id="btn-scan" type="button"><i class="bi bi-qr-code-scan" aria-hidden="true"></i> Scan order QR</button><button class="sy-btn ghost small" id="btn-export" type="button">Export CSV</button></div></div>
+        <div class="sy-cards"><div class="sy-stat">Total<b id="val-total">0</b></div><div class="sy-stat">Pending<b id="val-pending">0</b></div><div class="sy-stat">Preparing<b id="val-preparing">0</b></div><div class="sy-stat">Ready<b id="val-ready">0</b></div><div class="sy-stat">Completed<b id="val-completed">0</b></div><div class="sy-stat">Cancelled<b id="val-cancelled">0</b></div><div class="sy-stat">Refund requests<b id="val-refund">0</b></div></div>
         <div class="sy-filters sy-quick" id="quick-bar">
             <button class="sy-btn small" id="q-today" type="button" data-quick="today">Today</button>
             <button class="sy-btn small ghost" type="button" data-quick="all">All dates</button>
@@ -21,6 +21,7 @@
             <button class="sy-btn small ghost" type="button" data-quick="Out for Delivery">Out for delivery</button>
             <button class="sy-btn small ghost" type="button" data-quick="Completed">Completed</button>
             <button class="sy-btn small ghost" type="button" data-quick="Cancelled">Cancelled</button>
+            <button class="sy-btn small ghost" type="button" data-quick="refunds">Refund requests</button>
         </div>
         <p class="sy-sub" id="range-note" style="margin-bottom:10px"></p>
         <div class="sy-filters">
@@ -33,6 +34,7 @@
         <div class="sy-scroll"><table class="sy-table"><thead><tr><th>Order</th><th>Date</th><th>Customer</th><th>Items</th><th>Total</th><th>Payment</th><th>Pick-up / Delivery</th><th>Progress</th><th>Action</th></tr></thead><tbody id="transaction-table-body"></tbody></table></div>
     </main>
     <script src="../JavaScripts/shell.js"></script><script src="../JavaScripts/api.js"></script>
+    <script src="../JavaScripts/scan.js"></script>
     <script src="../JavaScripts/admin_history.js"></script>
     <script src="../JavaScripts/support.js"></script>
 </body>

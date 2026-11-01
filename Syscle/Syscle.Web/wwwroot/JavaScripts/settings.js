@@ -3,7 +3,7 @@
     const $ = id => document.getElementById(id), body = $('settings-body');
     let me; try { me = await api('/api/auth/me'); } catch (e) { return; }
     const admin = me.role === 'Admin' || me.role === 'SuperAdmin';
-    $('back-link').href = admin ? 'adminhomepage.html' : 'homepage.html'; $('back-link').innerHTML = admin ? '&larr; Dashboard' : '&larr; Back to Storefront';
+    $('back-link').href = admin ? 'adminhomepage.html' : 'homepage.html'; $('back-link').innerHTML = admin ? '<i class="bi bi-arrow-left" aria-hidden="true"></i> Dashboard' : '<i class="bi bi-arrow-left" aria-hidden="true"></i> Back to Storefront';
 
     if (admin) {
         $('set-sub').textContent = 'Your store details show up in the customers’ help window.';
