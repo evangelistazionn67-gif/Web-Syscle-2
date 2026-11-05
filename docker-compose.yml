@@ -12,6 +12,7 @@ services:
       Payments__TestMode: "${PAYMENTS_TEST_MODE:-false}"
       EmailSettings__SendGridApiKey: "${SENDGRID_API_KEY:-}"
       PayMongo__SecretKey: "${PAYMONGO_SECRET_KEY:-}"
+      PayMongo__WebhookSecret: "${PAYMONGO_WEBHOOK_SECRET:-}"
       PayPal__ClientId: "${PAYPAL_CLIENT_ID:-}"
       PayPal__Secret: "${PAYPAL_SECRET:-}"
     depends_on:

@@ -28,6 +28,7 @@
             if (bd) bd.insertAdjacentHTML('beforeend', `<div class="sy-row"><span>${esc(p.name)}${l.size ? ' [' + esc(l.size) + ']' : ''} (${peso(p.price)})</span><span>x ${l.qty}</span></div>`);
         });
         if ($('pos-total')) $('pos-total').textContent = 'Total Due: ' + peso(total);
+        if ($('pos-bar-total')) $('pos-bar-total').textContent = peso(total);
     }
     const search = $('pos-item-search');
     if (search) {
@@ -70,6 +71,7 @@
     if ($('btn-scan-item')) $('btn-scan-item').addEventListener('click', () => SyScan.open({ title: 'Scan items', hint: 'Scan the QR label on each item. Use a USB scanner, the camera, or type the SKU.', keepOpen: true, onCode: addByCode }));
 
     // two checks before the sale is saved: the items first, then the money
+    if ($('pos-bar-btn')) $('pos-bar-btn').addEventListener('click', () => $('btn-generate').click());
     if ($('btn-generate')) $('btn-generate').addEventListener('click', () => {
         if (!lines.length) return toast('Add at least one item.', true);
         const method = $('pos-payment').selectedOptions[0] ? $('pos-payment').selectedOptions[0].textContent : '';

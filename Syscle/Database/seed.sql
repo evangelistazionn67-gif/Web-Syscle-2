@@ -12,7 +12,7 @@ INSERT IGNORE INTO Settings (SettingKey, SettingValue) VALUES
 
 INSERT IGNORE INTO PaymentMethods (MethodCode, Label, IsOn) VALUES
   ('cash','Cash',1), ('gcash','GCash',1),
-  ('paymongo','GCash / Maya / Card (online)',1), ('paypal','PayPal (online)',1);
+  ('paymongo','PayMongo',1), ('paypal','PayPal (online)',0);
 
 -- Seasons (Philippine calendar). Edit the dates in Admin > Dropdown lists.
 INSERT IGNORE INTO Seasons (Name, Kind, StartMD, EndMD) VALUES

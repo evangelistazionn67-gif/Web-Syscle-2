@@ -677,7 +677,6 @@ admin.MapPost("/bundles", async (BundleNewReq r, Db db) =>
         var same = existing.GroupBy(x => x.BundleId).Any(g => string.Join(",", g.OrderBy(x => x.ProductId).Select(x => x.ProductId + "x" + x.Qty)) == sig);
         if (same) return Results.Conflict(new { error = isBogo ? "A Buy 1 Get 1 for this item is already created." : "A bundle with these exact items already exists.", duplicate = true });
     }
- 
     var name = Nz(r.Name) ?? (groups.Count == 1 ? (isBogo && r.DiscountPercent == 50 ? "Buy 1 Get 1: " : "Buy " + totalQty + " ") + found[0].Name : string.Join(" + ", found.Select(f => f.Name)));
     if (name.Length > 160) name = name[..160];
     await c.ExecuteAsync("INSERT INTO Bundles(Name,DiscountPercent,IsActive,AutoMade,Kind,Season,StartsAt,EndsAt,Description) VALUES(@name,@pct,1,0,@kind,@bseason,@bsd,@bed,@bdesc)", new { name, pct = r.DiscountPercent, kind, bseason, bsd, bed, bdesc }, tx);
@@ -1179,7 +1178,7 @@ static class Auth
             using var c = db.Open();
             s = await c.QueryFirstOrDefaultAsync<SessionRow>("SELECT Role, Status, SessionVersion, TIMESTAMPDIFF(SECOND, IFNULL(LastActive, NOW()), NOW()) AS IdleFor FROM Users WHERE UserId=@uid", new { uid });
             await c.ExecuteAsync("UPDATE Users SET LastSeen = NOW() WHERE UserId=@uid AND (LastSeen IS NULL OR LastSeen < DATE_SUB(NOW(), INTERVAL 1 MINUTE))", new { uid });
-            if (ctx.Scheme.Name == Schemes.Admin) idleLimit = await Cfg.IntAsync(c, "AdminIdleSeconds", 30, 3600);
+            if (ctx.Scheme.Name == Schemes.Admin) idleLimit = await Cfg.IntAsync(c, "AdminIdleSeconds", 30, 3600) + 20;   // +20 s grace: the page timer signs out first, the server only catches closed tabs. Without it a slow click on a link signed the admin out
         }
         string? why = null;
         if (s is null) why = "gone";
@@ -1221,7 +1220,13 @@ public class PayMongoService
                 line_items = new[] { new { currency = "PHP", amount = (int)Math.Round(total * 100m), name = "Order " + orderCode, quantity = 1 } },
                 payment_method_types = new[] { "gcash", "paymaya", "card" }, success_url = successUrl, cancel_url = cancelUrl, metadata = new { orderId = orderId.ToString() } } } };
             using var http = Client(); var res = await http.PostAsJsonAsync("https://api.paymongo.com/v1/checkout_sessions", body); var text = await res.Content.ReadAsStringAsync();
-            if (!res.IsSuccessStatusCode) { Console.WriteLine("[Syscle] PayMongo answered " + (int)res.StatusCode + ": " + (text.Length > 300 ? text[..300] : text)); return (null, null, "The payment page could not be opened. Try again or choose another method."); }
+            if (!res.IsSuccessStatusCode)
+            {
+                Console.WriteLine("[Syscle] PayMongo answered " + (int)res.StatusCode + ": " + (text.Length > 300 ? text[..300] : text));
+                // PayMongo says what is wrong (for example "amount must be at least 20 pesos"): show that so a test is easy to fix
+                string? why = null; try { using var ed = JsonDocument.Parse(text); why = ed.RootElement.GetProperty("errors")[0].GetProperty("detail").GetString(); } catch { }
+                return (null, null, "PayMongo could not open the payment page" + (string.IsNullOrWhiteSpace(why) ? "." : ": " + (why.Length > 160 ? why[..160] : why)));
+            }
             using var doc = JsonDocument.Parse(text); var data = doc.RootElement.GetProperty("data");
             return (data.GetProperty("id").GetString(), data.GetProperty("attributes").GetProperty("checkout_url").GetString(), null);
         }
@@ -1463,6 +1468,10 @@ static class Seed
         await AddColumn(c, "Bundles", "StartsAt", "DATE NULL"); await AddColumn(c, "Bundles", "EndsAt", "DATE NULL");
         await AddColumn(c, "Bundles", "Season", "VARCHAR(30) NULL"); await AddColumn(c, "Bundles", "Kind", "VARCHAR(10) NOT NULL DEFAULT 'Bundle'");
         await AddColumn(c, "Bundles", "Description", "VARCHAR(500) NULL"); await AddColumn(c, "Bundles", "ImagePath", "VARCHAR(260) NULL");
+        // payment buttons are Cash, GCash and PayMongo. The old combined label becomes "PayMongo" (orders follow), and PayPal is switched off once
+        await c.ExecuteAsync("UPDATE Orders SET PaymentMethod='PayMongo' WHERE PaymentMethod='GCash / Maya / Card (online)'");
+        if (await c.ExecuteAsync("UPDATE PaymentMethods SET Label='PayMongo' WHERE MethodCode='paymongo' AND Label='GCash / Maya / Card (online)'") > 0)
+            await c.ExecuteAsync("UPDATE PaymentMethods SET IsOn=0 WHERE MethodCode='paypal'");
         // a unique index on SKU (ignored when it already exists)
         try { await c.ExecuteAsync("CREATE UNIQUE INDEX UX_Products_Sku ON Products(Sku)"); } catch (MySqlException) { }
     }

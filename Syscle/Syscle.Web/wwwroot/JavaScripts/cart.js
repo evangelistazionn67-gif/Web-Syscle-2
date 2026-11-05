@@ -26,7 +26,9 @@
         bundleInfo.applied.forEach(b => bd.insertAdjacentHTML('beforeend', `<div class="sy-row"><span>Bundle: ${esc(b.name)} (${b.percent}% off)</span><span>-${peso(b.discount)}</span></div>`));
         const after = sub - bundleInfo.discount;
         if (delivery && cart.length) bd.insertAdjacentHTML('beforeend', `<div class="sy-row"><span>Delivery fee</span><span>${peso(fee)}</span></div>`);
-        $('total-cost').textContent = 'Total: ' + peso(after - Math.round(after * pct) / 100 + (delivery && cart.length ? fee : 0)) + (pct ? ` (${pct}% promo)` : '');
+        const grand = peso(after - Math.round(after * pct) / 100 + (delivery && cart.length ? fee : 0));
+        $('total-cost').textContent = 'Total: ' + grand + (pct ? ` (${pct}% promo)` : '');
+        $('bar-total').textContent = grand; $('cobar').hidden = !cart.length;
     }
 
     async function load() { cart = await api('/api/cart'); bundleInfo = await api('/api/cart/bundles'); render(); refreshCartBadge(); }
@@ -97,7 +99,7 @@
         const usable = m => m.ready || m.test;
         $('payment-method').innerHTML = methods.map(m => `<option value="${esc(m.code)}"${usable(m) ? '' : ' disabled'}>${esc(m.label)}</option>`).join('') || '<option value="">No payment method</option>';
         const first = methods.find(usable); if (first) $('payment-method').value = first.code;
-        const HINT = { cash: 'Pay at pick-up or to the rider.', gcash: 'Send to the store\'s GCash, then type the reference number.', paymongo: 'GCash, Maya or card on a secure page.', paypal: 'Pay with your PayPal account.' };
+        const HINT = { cash: 'Pay at pick-up or to the rider.', gcash: 'Send to the store\'s GCash, then type the reference number.', paymongo: 'Pay online on a secure PayMongo page.', paypal: 'Pay with your PayPal account.' };
         const ICON = { cash: 'cash-stack', gcash: 'phone', paymongo: 'credit-card-2-front', paypal: 'paypal' };
         const paintList = () => {
             $('pay-list').innerHTML = methods.map(m => `<label class="sy-payopt${$('payment-method').value === m.code ? ' on' : ''}${usable(m) ? '' : ' off'}"><input type="radio" name="paypick" value="${esc(m.code)}"${$('payment-method').value === m.code ? ' checked' : ''}${usable(m) ? '' : ' disabled'}>
