@@ -130,7 +130,7 @@
           <p><b>Reason:</b> ${esc(o.refundReason || '-')}</p>
           <label for="rd-note">Message to the customer (optional)</label><input id="rd-note" class="sy-input" maxlength="300">
           <label class="sy-check-line"><input type="checkbox" id="rd-restock" checked> Put the items back in stock</label>
-          <p class="sy-sub">Online payments (PayMongo, PayPal) are refunded through the provider when approved. Cash and GCash refunds are handed back by you.</p>
+          <p class="sy-sub">Online payments (PayMongo) are refunded through the provider when approved. Cash refunds are handed back by you.</p>
           <div class="sy-modal-actions"><button class="sy-x" type="button" id="rd-no">Decline</button><button class="sy-btn accent" type="button" id="rd-yes">Approve refund</button></div>`);
         const send = ok => async () => { try { const r = await api(`/api/admin/transactions/${o.id}/refund-decision`, 'POST', { approve: ok, note: m.el.querySelector('#rd-note').value.trim() || null, restock: m.el.querySelector('#rd-restock').checked }); m.close(); toast(ok ? (r && r.message ? r.message : 'Refund approved.') : 'Refund declined.'); await load(); } catch (e) { toast(e.message, true); } };
         m.el.querySelector('#rd-yes').onclick = send(true); m.el.querySelector('#rd-no').onclick = send(false);

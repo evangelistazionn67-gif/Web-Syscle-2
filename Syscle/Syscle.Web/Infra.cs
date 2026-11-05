@@ -21,6 +21,13 @@ static class Sql
     // The day a sale is booked is the day the money was received.
     public const string RevDate = "IFNULL(o.PaidAt,o.CreatedAt)";
     public const string Code = "CONCAT(IF(o.Channel='Walk-in','WLK-','ORD-'), LPAD(o.OrderId,6,'0'))";
+    // The SET part used whenever an online payment is confirmed by PayMongo/PayPal. If the order was already cancelled (for example it expired while the
+    // customer was paying), the money is real but the order is dead, so the order is flagged for a refund instead of silently turning into a paid, cancelled order.
+    // (RefundStatus is assigned last on purpose: MySQL reads the new value of a column in the assignments after it.)
+    public const string MarkPaid = "PaymentStatus='Paid', PaidAt=NOW(), " +
+        "RefundReason=IF(Status='Cancelled' AND RefundStatus='None','Paid after the order was cancelled',RefundReason), " +
+        "RefundRequestedAt=IF(Status='Cancelled' AND RefundStatus='None',NOW(),RefundRequestedAt), " +
+        "RefundStatus=IF(Status='Cancelled' AND RefundStatus='None','Requested',RefundStatus)";
 }
 
 // Store rules saved in the Settings table (Admin > Settings). A short cache keeps the database from being asked on every click.
@@ -291,10 +298,12 @@ static class Schemes
         if (p.StartsWith("/api/admin") || p.StartsWith("/pages/admin") || p.StartsWith("/javascripts/admin")) return Admin;
         return ctx.Request.Headers["X-Area"].ToString() == "admin" ? Admin : Customer;
     }
-    public static void Cookie(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationOptions o, string name)
+    public static void Cookie(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationOptions o, string name, bool secureOnly = false)
     {
         o.Cookie.Name = name;
         o.Cookie.HttpOnly = true;
+        // secureOnly (Security:SecureCookies=true): the browser only ever sends the sign-in cookie over HTTPS. Otherwise it follows the request (Secure whenever the site is opened over HTTPS).
+        o.Cookie.SecurePolicy = secureOnly ? CookieSecurePolicy.Always : CookieSecurePolicy.SameAsRequest;
         o.Cookie.SameSite = SameSiteMode.Lax;
         o.ExpireTimeSpan = TimeSpan.FromHours(8);
         o.SlidingExpiration = true;
