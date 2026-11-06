@@ -5,7 +5,7 @@
   <title>Syscle - Shopping Cart</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600;700;800&display=swap"><link rel="stylesheet" href="../Styles/ui.css">
 </head>
-<body data-area="shop" class="has-cobar">
+<body data-area="shop" class="cart-page">
   
 <main class="cart-page-wrapper">
     <div class="cart-header"><div><a href="homepage.html" class="back-btn"><i class="bi bi-arrow-left" aria-hidden="true"></i> Keep shopping</a>
@@ -14,6 +14,7 @@
       <div class="cart-items-window" id="cart-items-container"></div>
       <div class="cart-right-column">
         <div class="order-summary-box">
+          <div class="sy-sumscroll">
           <h2>Order summary</h2><hr class="summary-divider">
           <div class="summary-meta-grid">
             <span><b id="summary-dynamic-name">(Username)</b><span class="right-align sy-muted" id="purchase-date">(Date)</span></span>
@@ -35,19 +36,17 @@
           </div>
           <p class="cost-breakdown-title">Cost breakdown</p>
           <div class="cost-breakdown-window" id="cost-breakdown-container"></div>
-          <div class="total-cost-row"><strong id="total-cost">Total: 0</strong></div>
-          <p class="order-number-text" id="order-number">Your order number appears after checkout.</p>
+          </div>
+          <div class="sy-sumfoot">
+            <div class="total-cost-row"><strong id="total-cost">Total: 0</strong></div>
+            <p class="order-number-text" id="order-number">Your order number appears after checkout.</p>
+            <button class="proceed-checkout-btn" id="btn-checkout" type="button">Place order <i class="bi bi-arrow-right" aria-hidden="true"></i></button>
+          </div>
         </div>
         <p class="sy-sub" style="margin:0;text-align:center;font-size:13px">You will get an email confirmation and can track every step in <a href="orders.html">My orders</a>.</p>
       </div>
     </div>
   </main>
-  <div class="sy-cobar" id="cobar" role="region" aria-label="Checkout" hidden>
-    <div class="sy-cobar-in">
-      <div class="sy-cobar-total"><small>Total</small><b id="bar-total">0</b></div>
-      <button class="proceed-checkout-btn" id="btn-checkout" type="button">Place order <i class="bi bi-arrow-right" aria-hidden="true"></i></button>
-    </div>
-  </div>
   <script src="../JavaScripts/shell.js"></script><script src="../JavaScripts/api.js"></script><script src="../JavaScripts/cart.js"></script>
     <script src="../JavaScripts/support.js"></script>
 </body>

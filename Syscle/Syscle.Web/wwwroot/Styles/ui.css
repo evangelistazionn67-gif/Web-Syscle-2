@@ -538,3 +538,17 @@ body[data-area=admin] .sy-cobar{left:var(--side-w)}@media(max-width:980px){body[
 /* payment choices: one clear button per method */
 .sy-payopt{min-height:58px}.sy-payopt:hover:not(.off){border-color:var(--accent)}
 body.has-cobar .support-btn{width:46px;height:46px;right:12px;bottom:96px}
+
+/* v15 - Place order lives INSIDE the order summary. Its footer (total + Place order) is pinned to the bottom of the screen while the summary is on screen, at any zoom, and rests at the bottom of the summary once you scroll to the end */
+.order-summary-box{padding:0;position:static;max-height:none;display:block;overflow:visible}
+.order-summary-box .sy-sumscroll{padding:22px 22px 10px}
+.order-summary-box .sy-sumfoot{position:sticky;bottom:0;z-index:20;padding:12px 22px 18px;background:#fff;border-top:1px solid var(--line);border-radius:0 0 var(--r) var(--r);box-shadow:0 -8px 16px rgba(15,23,42,.08)}
+.sy-sumfoot .total-cost-row{margin:0 0 4px;border:0;padding:0}.sy-sumfoot .order-number-text{margin:0 0 10px}
+.sy-sumfoot .proceed-checkout-btn{width:100%}.proceed-checkout-btn:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
+/* stacked layout (phones, 250%+ zoom) or a very short window: the summary footer becomes a bar fixed to the bottom of the screen */
+@media(max-width:900px),(max-height:519px){
+  .order-summary-box .sy-sumfoot{position:fixed;left:0;right:0;bottom:0;z-index:840;display:flex;align-items:center;gap:14px;border-radius:0;padding:10px clamp(14px,3vw,28px) calc(10px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 24px rgba(15,23,42,.14)}
+  .sy-sumfoot .total-cost-row{margin:0;flex:1 1 auto;min-width:0}.sy-sumfoot .order-number-text{display:none}
+  .sy-sumfoot .proceed-checkout-btn{width:auto;flex:0 1 320px;min-width:170px;padding:14px 22px}
+  body.cart-page{padding-bottom:92px}body.cart-page .support-btn{width:46px;height:46px;right:12px;bottom:100px}
+}

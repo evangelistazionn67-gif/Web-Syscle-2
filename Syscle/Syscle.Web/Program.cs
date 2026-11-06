@@ -95,7 +95,11 @@ app.Use(async (ctx, next) =>
     await next();
 });
 app.UseDefaultFiles();
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions { OnPrepareResponse = r =>
+{
+    // pages, scripts and styles are re-checked on every visit (a quick "not changed" answer when nothing changed), so an update shows without a hard refresh
+    var n = r.File.Name.ToLowerInvariant(); if (n.EndsWith(".html") || n.EndsWith(".js") || n.EndsWith(".css")) r.Context.Response.Headers["Cache-Control"] = "no-cache";
+} });
 
 IResult Bad(string m) => Results.BadRequest(new { error = m });
 IResult Conflict(string m) => Results.Conflict(new { error = m });

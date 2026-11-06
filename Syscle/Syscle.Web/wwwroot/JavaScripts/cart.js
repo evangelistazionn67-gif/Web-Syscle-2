@@ -28,7 +28,7 @@
         if (delivery && cart.length) bd.insertAdjacentHTML('beforeend', `<div class="sy-row"><span>Delivery fee</span><span>${peso(fee)}</span></div>`);
         const grand = peso(after - Math.round(after * pct) / 100 + (delivery && cart.length ? fee : 0));
         $('total-cost').textContent = 'Total: ' + grand + (pct ? ` (${pct}% promo)` : '');
-        $('bar-total').textContent = grand; $('cobar').hidden = !cart.length;
+        $('btn-checkout').disabled = !cart.length;
     }
 
     async function load() { cart = await api('/api/cart'); bundleInfo = await api('/api/cart/bundles'); render(); refreshCartBadge(); }
