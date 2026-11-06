@@ -57,7 +57,7 @@
     $('promo-code').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); applyPromo(false); } });
     // codes the store is giving out right now (the same ones the pop-up shows), and a code the customer already claimed
     try {
-        const d = await fetch('/api/promotions').then(r => r.json()), box = $('promo-offers');
+        const d = await api('/api/promotions'), box = $('promo-offers');
         if (d.codes && d.codes.length) {
             box.hidden = false; box.innerHTML = '<span>Codes you can use:</span> ' + d.codes.map(c => `<button type="button" class="sy-chip accent" data-code="${esc(c.code)}">${esc(c.code)} &middot; ${c.percent}% off</button>`).join(' ');
             box.addEventListener('click', e => { const b = e.target.closest('[data-code]'); if (b) { $('promo-code').value = b.dataset.code; applyPromo(false); } });
@@ -119,6 +119,7 @@
         repaintPay(); render();
     }));
     $('btn-checkout').addEventListener('click', async () => {
+        const btn = $('btn-checkout'); if (btn.disabled) return;   // one click = one order, even if the button is pressed twice quickly
         if (!cart.length) return toast('Cart is empty.', true);
         if (delivery && !(pin && dq && dq.inRange)) return toast(dq && !dq.inRange ? 'Your place is outside our delivery range. Please choose Store pick-up.' : 'Pin your delivery place on the map first.', true);
         if (delivery && $('payment-method').value === 'cash' && dcfg && dcfg.codMax > 0 && lastTotal > dcfg.codMax) return toast('Cash on delivery is only for orders up to ' + peso(dcfg.codMax) + '. Please pay with GCash or PayMongo.', true);
@@ -139,34 +140,25 @@
             showModal(`<div class="sy-done"><div class="sy-check"><i class="bi bi-check-lg" aria-hidden="true"></i></div><h2>Order placed!</h2><p>Your order number</p><div class="sy-code">${esc(res.orderCode)}</div>
         <p>Total: <b>${peso(res.total)}</b></p><p>${delivery ? 'Delivery' : 'Pick-up'} date: <b>${pickText}</b></p>${pay}
         <div class="sy-pm-actions"><a class="sy-btn ghost" href="orders.html">Track my order</a><a class="sy-btn accent" href="homepage.html">Continue shopping</a></div></div>`);
-        } catch (e) { toast(e.message, true); await load(); }
+        } catch (e) { btn.disabled = false; toast(e.message, true); await load(); }
     });
 
     try {
         methods = await api('/api/payment-methods');
-        // every payment method the store switched on is listed. One that is not set up yet is shown but cannot be picked (test mode makes online ones usable with a practice payment page)
-        const usable = m => m.ready || m.test;
+        // the store's payment methods: Cash (pay at the store) and Online (PayMongo). One that is not set up yet is shown but cannot be picked.
+        const usable = m => m.ready;
         $('payment-method').innerHTML = methods.map(m => `<option value="${esc(m.code)}"${usable(m) ? '' : ' disabled'}>${esc(m.label)}</option>`).join('') || '<option value="">No payment method</option>';
         const first = methods.find(usable); if (first) $('payment-method').value = first.code;
         const HINT = { cash: 'Pay at pick-up, or cash on delivery.', gcash: 'Send to the store\'s GCash, then type the reference number.', paymongo: 'Pay online on a secure PayMongo page.', paypal: 'Pay with your PayPal account.' };
         const ICON = { cash: 'cash-stack', gcash: 'phone', paymongo: 'credit-card-2-front', paypal: 'paypal' };
         const paintList = () => {
             $('pay-list').innerHTML = methods.map(m => `<label class="sy-payopt${$('payment-method').value === m.code ? ' on' : ''}${usable(m) ? '' : ' off'}"><input type="radio" name="paypick" value="${esc(m.code)}"${$('payment-method').value === m.code ? ' checked' : ''}${usable(m) ? '' : ' disabled'}>
-                <i class="bi bi-${ICON[m.code] || 'wallet2'}" aria-hidden="true"></i><span><b>${esc(m.label)}</b><small>${esc(HINT[m.code] || '')}</small></span>${!m.ready ? (m.test ? '<em class="sy-chip warn">Test mode</em>' : '<em class="sy-chip mute">Not set up yet</em>') : ''}</label>`).join('');
+                <i class="bi bi-${ICON[m.code] || 'wallet2'}" aria-hidden="true"></i><span><b>${esc(m.label)}</b><small>${esc(HINT[m.code] || '')}</small></span>${!m.ready ? '<em class="sy-chip mute">Not available yet</em>' : ''}</label>`).join('');
         };
         repaintPay = paintList;
         $('pay-list').addEventListener('change', e => { if (e.target.name === 'paypick') { $('payment-method').value = e.target.value; $('payment-method').dispatchEvent(new Event('change')); paintList(); } });
-        // GCash box: shows the store's number (and QR when the admin turned it on) and asks for the reference number
-        let qr = { show: false, image: '' }; try { qr = await api('/api/settings/payment-qr'); } catch (e) { }
-        const paintPay = () => {
-            const m = methods.find(x => x.code === $('payment-method').value), box = $('gcash-box');
-            box.hidden = !(m && m.code === 'gcash');
-            if (box.hidden) return;
-            $('gc-number').textContent = m.accountNumber || '(ask the store)'; $('gc-name').textContent = m.accountName ? '(' + m.accountName + ')' : '';
-            $('gc-qr').hidden = !(qr.show && qr.image); if (qr.image) $('gc-qr').src = qr.image;
-        };
-        $('payment-method').addEventListener('change', paintPay); paintList(); paintPay();
-        try { const pref = localStorage.getItem('syscle.pay'); if (pref && methods.some(x => x.code === pref && usable(x))) { $('payment-method').value = pref; paintList(); paintPay(); } } catch (e) { }
+        paintList();
+        try { const pref = localStorage.getItem('syscle.pay'); if (pref && methods.some(x => x.code === pref && usable(x))) { $('payment-method').value = pref; paintList(); } } catch (e) { }
         await load();
     } catch (e) { location.href = '/Pages/error.html'; }
     initHeader(null);

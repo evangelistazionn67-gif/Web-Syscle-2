@@ -28,7 +28,6 @@
             if (bd) bd.insertAdjacentHTML('beforeend', `<div class="sy-row"><span>${esc(p.name)}${l.size ? ' [' + esc(l.size) + ']' : ''} (${peso(p.price)})</span><span>x ${l.qty}</span></div>`);
         });
         if ($('pos-total')) $('pos-total').textContent = 'Total Due: ' + peso(total);
-        if ($('pos-bar-total')) $('pos-bar-total').textContent = peso(total);
     }
     const search = $('pos-item-search');
     if (search) {
@@ -84,7 +83,6 @@
     try { autoPrint = (await api('/api/admin/store-info')).info.AutoPrintReceipt !== '0'; } catch (e) { }
 
     // two checks before the sale is saved: the items first, then the money
-    if ($('pos-bar-btn')) $('pos-bar-btn').addEventListener('click', () => $('btn-generate').click());
     if ($('btn-generate')) $('btn-generate').addEventListener('click', () => {
         if (!lines.length) return toast('Add at least one item.', true);
         const method = $('pos-payment').selectedOptions[0] ? $('pos-payment').selectedOptions[0].textContent : '';
@@ -116,7 +114,7 @@
     });
     initHeader(null);
     try {
-        const methods = (await api('/api/admin/payment-methods')).filter(m => m.isOn);
+        const methods = (await api('/api/admin/payment-methods')).filter(m => m.isOn && m.code !== 'paymongo' && m.code !== 'paypal');   // online methods need the customer's own device, so only counter methods are offered here
         if ($('pos-payment')) $('pos-payment').innerHTML = methods.map(m => `<option value="${esc(m.code)}">${esc(m.label)}</option>`).join('') || '<option value="">No payment method enabled</option>';
         try { qrReady = (await api('/api/admin/qr/status')).ready; } catch (e) { }
         if (!qrReady && $('pos-payment')) [...$('pos-payment').options].forEach(o => { if (o.value === 'qrph') o.remove(); });
