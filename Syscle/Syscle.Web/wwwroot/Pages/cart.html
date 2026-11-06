@@ -36,8 +36,14 @@
           </div>
           <div class="sy-sumfoot">
             <div class="total-cost-row"><strong id="total-cost">Total: 0</strong></div>
+            <div class="sy-payblock">
+              <label id="pay-label" for="payment-method">Payment method</label>
+              <select id="payment-method" hidden></select><input type="hidden" id="gc-ref">
+              <div class="sy-paylist" id="pay-list"></div>
+            </div>
             <p class="order-number-text" id="order-number">Your order number appears after checkout.</p>
             <button class="proceed-checkout-btn" id="btn-checkout" type="button">Place order <i class="bi bi-arrow-right" aria-hidden="true"></i></button>
+            <p class="sy-sumnote">You will get an email confirmation and can track every step in <a href="orders.html">My orders</a>.</p>
           </div>
         </div>
       </div>

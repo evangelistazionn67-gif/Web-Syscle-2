@@ -12,7 +12,7 @@
     function render() {
         const box = $('cart-items-container'), bd = $('cost-breakdown-container');
         box.innerHTML = cart.length ? '' : '<div class="sy-empty">Your cart is empty.<br><a class="sy-btn accent small" style="margin-top:12px" href="homepage.html">Browse parts</a></div>';
-        bd.querySelectorAll('.sy-row').forEach(n => n.remove());
+        bd.innerHTML = cart.length ? '' : '<div class="sy-bd-empty">No items yet. Add parts to your cart to see the breakdown.</div>';
         let sub = 0;
         cart.forEach(l => {
             sub += l.price * l.qty;
@@ -21,14 +21,18 @@
         ${l.image ? `<img class="sy-thumb" src="${esc(l.image)}" alt="">` : ''}<div class="sy-grow"><b>${esc(l.name)}${l.size ? ' <span class="sy-sizetag">' + esc(l.size) + '</span>' : ''}${colorStr}</b><small>${esc(l.itemType)} &middot; ${peso(l.price)} each &middot; ${l.stock} in stock</small></div>
         <div class="sy-qty"><button data-d="-1">-</button><span>${l.qty}</span><button data-d="1">+</button></div>
         <b>${peso(l.price * l.qty)}</b><button class="sy-x" data-rm="1">Remove</button></div>`);
-            bd.insertAdjacentHTML('beforeend', `<div class="sy-row"><span>${esc(l.name)}${l.size ? ' [' + esc(l.size) + ']' : ''}${l.color ? ' (' + esc(l.color) + ')' : ''} (${peso(l.price)})</span><span>x ${l.qty}</span></div>`);
+            bd.insertAdjacentHTML('beforeend', `<div class="sy-bdrow"><div><b>${esc(l.name)}${l.size ? ' [' + esc(l.size) + ']' : ''}${l.color ? ' (' + esc(l.color) + ')' : ''}</b><small>${peso(l.price)} &times; ${l.qty}</small></div><b>${peso(l.price * l.qty)}</b></div>`);
         });
-        bundleInfo.applied.forEach(b => bd.insertAdjacentHTML('beforeend', `<div class="sy-row"><span>Bundle: ${esc(b.name)} (${b.percent}% off)</span><span>-${peso(b.discount)}</span></div>`));
+        const row = (label, val, cls) => bd.insertAdjacentHTML('beforeend', `<div class="sy-bdrow ${cls || ''}"><div><b>${label}</b></div><b>${val}</b></div>`);
+        if (cart.length) row('Items subtotal', peso(sub), 'sub');
+        bundleInfo.applied.forEach(b => row(`Bundle: ${esc(b.name)} (${b.percent}% off)`, '-' + peso(b.discount), 'disc'));
         const after = sub - bundleInfo.discount;
+        const promoOff = Math.round(after * pct) / 100;
+        if (cart.length && pct) row(`Promo code (${pct}% off)`, '-' + peso(promoOff), 'disc');
         const delOk = delivery && cart.length && dq && dq.inRange;
-        if (delivery && cart.length) bd.insertAdjacentHTML('beforeend', `<div class="sy-row"><span>Delivery fee${delOk ? ' (' + dq.km + ' km)' : ''}</span><span>${delOk ? peso(fee) : 'Pin your place'}</span></div>`);
-        lastTotal = after - Math.round(after * pct) / 100 + (delOk ? fee : 0); const grand = peso(lastTotal);
-        $('total-cost').textContent = 'Total: ' + grand + (pct ? ` (${pct}% promo)` : '');
+        if (delivery && cart.length) row(`Delivery fee${delOk ? ' (' + dq.km + ' km)' : ''}`, delOk ? peso(fee) : 'Pin your place');
+        lastTotal = after - promoOff + (delOk ? fee : 0); const grand = peso(lastTotal);
+        $('total-cost').textContent = 'Total: ' + grand;
         $('btn-checkout').disabled = !cart.length;
     }
 
