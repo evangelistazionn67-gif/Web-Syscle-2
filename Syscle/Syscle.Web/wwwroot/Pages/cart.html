@@ -22,7 +22,12 @@
             <div id="promo-offers" class="sy-offers" hidden></div>
             <div><label>How do you want to receive it?</label>
               <div class="sy-choice" id="ful-choice"><label><input type="radio" name="ful" value="Pickup" checked> <span><b>Store pick-up</b><small>Free</small></span></label><label><input type="radio" name="ful" value="Delivery"> <span><b>Home delivery</b><small id="ful-fee">Fee applies</small></span></label></div></div>
-            <div id="delivery-box" hidden><label for="del-address">Delivery address</label><textarea id="del-address" class="promo-input" rows="2" maxlength="250" placeholder="House no., street, barangay, city"></textarea>
+            <div id="delivery-box" hidden>
+              <label>Pin your delivery place</label>
+              <div id="del-map" class="sy-map" aria-label="Delivery map"></div>
+              <div class="sy-maprow"><button type="button" class="sy-btn ghost small" id="del-locate"><i class="bi bi-crosshair" aria-hidden="true"></i> Use my current location</button><span id="del-km" class="sy-sub">Tap the map to drop a pin on your place.</span></div>
+              <p class="sy-sub" style="margin:0 0 8px">Pay with GCash or PayMongo, or choose Cash and pay when it arrives (cash on delivery has a maximum order amount).</p>
+              <label for="del-address">Delivery address (add your house number and a landmark)</label><textarea id="del-address" class="promo-input" rows="2" maxlength="250" placeholder="House no., street, barangay, city"></textarea>
               <label for="del-phone">Phone number for the rider</label><input type="tel" id="del-phone" class="promo-input" maxlength="20" placeholder="09XX XXX XXXX" inputmode="tel"></div>
             <div><label for="pickup-date" id="date-label">Pick-up date</label><input type="date" class="promo-input" id="pickup-date"></div>
             <div><label id="pay-label">Payment method</label><div id="pay-list" class="sy-paylist" role="radiogroup" aria-labelledby="pay-label"></div><select class="promo-input" id="payment-method" hidden aria-hidden="true"></select></div>
