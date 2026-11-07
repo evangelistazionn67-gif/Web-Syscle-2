@@ -75,40 +75,38 @@
     try { const cl = JSON.parse(localStorage.getItem('sy.claim') || 'null'); if (cl && cl.code) { $('promo-code').value = cl.code; applyPromo(true); } } catch (e) { }
 
     // Enforce permanent disabled state for the delivery radio input
+     // Force Delivery input to be disabled in Javascript
     const delRadio = document.querySelector('input[name=ful][value=Delivery]');
-    const pickupRadio = document.querySelector('input[name=ful][value=Pickupرفه]'); // fallback check
+    const pickupRadio = document.querySelector('input[name=ful][value=Pickup]');
+
     if (delRadio) {
         delRadio.disabled = true;
         delRadio.checked = false;
     }
-    const pickRadioElem = document.querySelector('input[name=ful][value=Pickup]');
-    if (pickRadioElem) pickRadioElem.checked = true;
-    
-    $('ful-fee').textContent = 'Not available';
+    if (pickupRadio) {
+        pickupRadio.checked = true;
+    }
+
+    // Reset state flags
+    delivery = false;
     $('delivery-box').hidden = true;
+    $('ful-fee').textContent = 'Unavailable';
 
-    $('btn-checkout').addEventListener('click', async () => {
-        const btn = $('btn-checkout'); if (btn.disabled) return;
-        if (!cart.length) return toast('Cart is empty.', true);
-        
-        const pickText = new Date(pick.value + 'T00:00:00').toLocaleDateString();
-        try {
-            const isG = $('payment-method').value === 'gcash', ref = $('gc-ref').value.replace(/\s/g, '');
-            if (isG && !/^[A-Za-z0-9]{8,20}$/.test(ref)) return toast('Pay the GCash number shown, then enter the reference number from your receipt.', true);
-            
-            // Fulfillment forced strictly to 'Pickup'
-            const res = await api('/api/checkout', 'POST', { 
-                pickupDate: pick.value, 
-                promoCode: $('promo-code').value.trim() || null, 
-                paymentMethod: $('payment-method').value, 
-                paymentRef: isG ? ref : null, 
-                fulfillment: 'Pickup', 
-                address: null, 
-                phone: null, 
-                lat: null, 
-                lng: null 
-            });
-
+    // Prevent radio state changes if dynamically triggered
+    document.querySelectorAll('input[name=ful]').forEach(r => r.addEventListener('change', (e) => {
+        if (e.target.value === 'Delivery') {
+            pickupRadio.checked = true;
+            delivery = false;
+            $('delivery-box').hidden = true;
+            toast('Home delivery is currently disabled.', true);
+            return;
+        }
+        delivery = false;
+        $('delivery-box').hidden = true;
+        $('date-label').textContent = 'Pick-up date';
+        repaintPay(); 
+        render();
+    }));
             if (res.checkoutUrl) { toast('Opening the secure payment page...'); location.href = res.checkoutUrl; return; }
             $('gc-ref').value = '';
             try { if (($('promo-code').value || '').trim().toUpperCase() === (JSON.parse(localStorage.getItem('sy.claim') || '{}').code || '')) localStorage.removeItem('sy.claim'); } catch (x) { }
