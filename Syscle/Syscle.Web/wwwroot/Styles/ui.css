@@ -557,3 +557,10 @@ body.has-cobar .support-btn{width:46px;height:46px;right:12px;bottom:96px}
 .sy-more label{display:block;margin-top:8px;font-weight:600}
 @media print{.sy-map{display:none}}
 #del-card .sy-grid2{margin-bottom:6px}#del-card .sy-sub{margin:8px 0}#del-card .sy-switch{margin:12px 0}
+
+/* v19 - SKU field: fixed "SYS -" prefix + 5 digits */
+.sy-skufield{display:flex;align-items:stretch;border:1px solid var(--line);border-radius:var(--r-sm);background:#fff;overflow:hidden}
+.sy-skufield:focus-within{border-color:var(--accent)}
+.sy-skupre{display:flex;align-items:center;padding:0 12px;background:#f1f5f9;color:var(--ink2);font-weight:800;letter-spacing:1px;border-right:1px solid var(--line);white-space:nowrap}
+.sy-skufield input{border:0;outline:0;box-shadow:none;flex:1;min-width:0;letter-spacing:6px;font-weight:700;margin:0;border-radius:0}
+.sy-skufield input,.sy-skufield input:focus{border:0;box-shadow:none;outline:0;width:auto}
