@@ -21,7 +21,8 @@
             <div class="promo-input-group"><label for="promo-code">Promo code</label><input type="text" class="promo-input" id="promo-code" maxlength="30" placeholder="Enter code"><button class="sy-btn small" id="promo-apply" type="button">Apply</button></div>
             <div id="promo-offers" class="sy-offers" hidden></div>
             <div><label>How do you want to receive it?</label>
-              <div class="sy-choice" id="ful-choice"><label><input type="radio" name="ful" value="Pickup" checked> <span><b>Store pick-up</b><small>Free</small></span></label><label><input type="radio" name="ful" value="Delivery"> <span><b>Home delivery</b><small id="ful-fee">Fee applies</small></span></label></div></div>
+              <div class="sy-choice" id="ful-choice"><label><input type="radio" name="ful" value="Pickup" checked> <span><b>Store pick-up</b><small>Free</small></span></label><label style="opacity: 0.5; cursor: not-allowed;">
+    <input type="radio" name="ful" value="Delivery" disabled> <span><b>Home delivery</b><small id="ful-fee">Fee applies</small></span></label></div></div>
             <div id="delivery-box" hidden>
               <label>Pin your delivery place</label>
               <div id="del-map" class="sy-map" aria-label="Delivery map"></div>
